@@ -86,6 +86,7 @@ const PlaybookRequestSchema = z.object({
     .optional()
     .default(null),
   impact: CalculatedImpactSchema,
+  aiConsent: z.boolean().optional().default(false),
 });
 
 const AiPlaybookResponseSchema = z.object({
@@ -171,9 +172,9 @@ export async function handlePlaybook(req: NextRequest) {
   const parsed = await readJsonBoundary(req, PlaybookRequestSchema, requestId);
   if (!parsed.ok) return apiErrorResponse(parsed.error, parsed.status);
 
-  const { location, profile, vent, impact } = parsed.value;
+  const { location, profile, vent, impact, aiConsent } = parsed.value;
   const playbook = buildDeterministicPlaybook(location, profile, vent ?? null, impact);
-  const source = await enhancePlaybookWithAi(playbook, location, profile);
+  const source = aiConsent ? await enhancePlaybookWithAi(playbook, location, profile) : 'basic';
 
   return securityJson(
     {

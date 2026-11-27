@@ -37,9 +37,11 @@ export default function PrivacyPage() {
             decimal places (~1 km) to fetch air quality and weather forecasts.
           </li>
           <li>
-            <strong>Groq AI (only when AI is enabled and you allow it):</strong> Your question and
-            the day&apos;s air quality numbers are sent to Groq&apos;s API to generate a response.
-            In Basic mode, nothing is sent to Groq.
+            <strong>Groq AI (only with your explicit consent):</strong> Both the browser and our
+            server API routes (<code>/api/ask</code>, <code>/api/playbook</code>,{' '}
+            <code>/api/plan/narrate</code>, <code>/api/plan</code>) require{' '}
+            <code>aiConsent: true</code> before calling Groq. Without consent, the server returns
+            the deterministic basic-mode response and never contacts Groq.
           </li>
         </ul>
       </section>

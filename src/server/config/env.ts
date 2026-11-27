@@ -49,7 +49,7 @@ export function validateEnv(raw: Record<string, string | undefined>): Env {
 }
 
 export function getEnv(): Env {
-  if (!cachedEnv) {
+  if (!cachedEnv || process.env['NODE_ENV'] === 'test') {
     cachedEnv = validateEnv(process.env);
   }
   return cachedEnv;

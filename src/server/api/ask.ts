@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { createDefaultProfile, ProfileSchema } from '@/domain/profile';
 import { buildBasicPlan } from '@/domain/plan';
 import { ask } from '@/server/llm/ask';
+import { createLlmClient, NullClient } from '@/server/llm/client';
 import { getRequestId, REQUEST_ID_HEADER } from '@/server/http/requestId';
 import {
   MemoryBucketStore,
@@ -18,6 +19,7 @@ const RequestSchema = z.object({
   profile: ProfileSchema.optional(),
   aqi: z.number().min(0).max(1000).optional().default(175),
   pm25: z.number().min(0).max(1500).optional().default(72),
+  aiConsent: z.boolean().optional().default(false),
 });
 
 export async function handleAsk(req: NextRequest) {
@@ -37,7 +39,15 @@ export async function handleAsk(req: NextRequest) {
     isFallback: false,
   };
   const plan = buildBasicPlan(profile, snapshot, now);
-  const answer = await ask(parsed.value.question, profile, plan);
+  const client = parsed.value.aiConsent ? createLlmClient() : new NullClient();
+  const answer = await ask(parsed.value.question, profile, plan, client);
+  if (!parsed.value.aiConsent && answer.source === 'basic') {
+    return securityJson(
+      { ...answer, fallbackReason: answer.fallbackReason ?? 'consent_not_granted' },
+      200,
+      { [REQUEST_ID_HEADER]: requestId }
+    );
+  }
   return securityJson(answer, 200, { [REQUEST_ID_HEADER]: requestId });
 }
 

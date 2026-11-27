@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
+import { formatWhatsAppBulletin } from '@/domain/bulletinTemplate';
 import { getRequestId, REQUEST_ID_HEADER } from '@/server/http/requestId';
 import {
   MemoryBucketStore,
@@ -27,42 +28,8 @@ const BulletinRequestSchema = z.object({
   cigsPerDay: z.number().min(0).max(100),
   windowLabel: z.string().min(1).max(60),
   sealLabel: z.string().min(1).max(60),
+  aiConsent: z.boolean().optional().default(false),
 });
-
-type BulletinRequest = z.infer<typeof BulletinRequestSchema>;
-
-/** Returns a wind description: calm when below 8 km/h, otherwise "light breeze". */
-function windDescription(windKmh: number): string {
-  return windKmh < 8 ? 'calm' : 'light-breeze';
-}
-
-function formatBulletin(req: BulletinRequest): string {
-  const name = req.rwaName || `${req.shortCity} Residents Welfare Group`;
-  const windDesc = windDescription(req.wind);
-  const windDescHi = req.wind < 8 ? 'शांत हवा' : 'हल्की हवा';
-  if (req.lang === 'hi') {
-    return (
-      `🌿 *${name} — आज का वायु स्वास्थ्य अलर्ट (VayuSaathi)*\n\n` +
-      `📍 *क्षेत्र:* ${req.city}\n` +
-      `📊 *CPCB NAQI:* *${req.naqi} (${req.bandLabel})* | PM2.5: ${req.pm25} µg/m³\n` +
-      `💨 *सुरक्षित वेंटिलेशन समय:* केवल *${req.windowLabel}* के बीच खिड़कियाँ खोलें। शाम *${req.sealLabel}* तक बंद रखें।\n\n` +
-      `✅ *आज के 2 सामुदायिक संकल्प:*\n` +
-      `1️⃣ *खुले में आग न जलाएँ:* कृपया गार्ड्स व सफाई कर्मियों से अनुरोध करें कि सूखे पत्ते या कचरा न जलाएँ — ${windDescHi} (${req.wind} km/h) में धुआँ यहीं फँस जाता है।\n` +
-      `2️⃣ *कम-उत्सर्जन आवागमन:* आज अकेले कार निकालने के बजाय मेट्रो/कारपूल अपनाएँ और सूखे झाड़ू की जगह गीला पोछा लगाएँ।\n\n` +
-      `🤝 आइए मिलकर अपनी कॉलोनी की हवा सुरक्षित रखें!`
-    );
-  }
-  return (
-    `🌿 *${name} — Daily Smog & Clean Air Bulletin (VayuSaathi)*\n\n` +
-    `📍 *Area:* ${req.city}\n` +
-    `📊 *CPCB NAQI:* *${req.naqi} (${req.bandLabel})* | PM2.5: ${req.pm25} µg/m³ (~${req.cigsPerDay} cigs/day eq.)\n` +
-    `🪟 *Safe Ventilation Window:* Open windows only during *${req.windowLabel}*. Seal doors/windows by *${req.sealLabel}*.\n\n` +
-    `✅ *Today's 2 Community Pledges:*\n` +
-    `1️⃣ *Zero Biomass / Leaf Burning:* Please remind society night guards & sweepers not to burn dry leaves or waste tonight — ${windDesc} ${req.wind} km/h winds trap smoke at breathing level.\n` +
-    `2️⃣ *Smarter Commute & Wet Mopping:* Swap solo car runs for Metro/carpool where possible, avoid engine idling at our main gate, and switch from dry sweeping to wet mopping today.\n\n` +
-    `🤝 Small coordinated habits cut our colony's local smog together!`
-  );
-}
 
 export async function handleBulletin(req: NextRequest) {
   const requestId = getRequestId(req);
@@ -72,7 +39,7 @@ export async function handleBulletin(req: NextRequest) {
   const parsed = await readJsonBoundary(req, BulletinRequestSchema, requestId);
   if (!parsed.ok) return apiErrorResponse(parsed.error, parsed.status);
 
-  const bulletinText = formatBulletin(parsed.value);
+  const bulletinText = formatWhatsAppBulletin(parsed.value);
   return securityJson(
     {
       bulletinText,

@@ -34,6 +34,7 @@ const RequestSchema = z.object({
   pm25: z.number().min(0).max(1500).optional(),
   snapshot: SnapshotSchema.optional(),
   mode: z.enum(['live', 'basic']).optional().default('live'),
+  aiConsent: z.boolean().optional().default(false),
 });
 
 export async function handlePlan(req: NextRequest) {
@@ -50,7 +51,7 @@ export async function handlePlan(req: NextRequest) {
   const now = new Date();
   const band = classifyAqi(aqiVal);
 
-  if (parsed.value.mode === 'basic') {
+  if (parsed.value.mode === 'basic' || !parsed.value.aiConsent) {
     const snapshot = {
       aqi: aqiVal,
       pm25: pm25Val ?? band.pm25Min,
@@ -61,7 +62,11 @@ export async function handlePlan(req: NextRequest) {
     };
     const plan = buildBasicPlan(profile, snapshot, now);
     return securityJson(
-      { ...plan, actions: [...plan.routine, ...plan.indoors, ...plan.alternatives] },
+      {
+        ...plan,
+        source: 'basic',
+        actions: [...plan.routine, ...plan.indoors, ...plan.alternatives],
+      },
       200,
       { [REQUEST_ID_HEADER]: requestId }
     );

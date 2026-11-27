@@ -9,6 +9,7 @@ import {
 import { RATE_LIMITS, readJsonBoundary } from '@/server/security/limits';
 import { apiErrorResponse, securityJson } from '@/server/security/response';
 import { narrate, type NarrativeItem } from '@/server/llm/narrate';
+import { createLlmClient, NullClient } from '@/server/llm/client';
 import { ProfileSchema, createDefaultProfile } from '@/domain/profile';
 
 const limiter = new TokenBucketLimiter(
@@ -30,6 +31,7 @@ const NarrateRequestSchema = z.object({
     )
     .min(1)
     .max(20),
+  aiConsent: z.boolean().optional().default(false),
 });
 
 export async function handlePlanNarrate(req: NextRequest) {
@@ -52,11 +54,13 @@ export async function handlePlanNarrate(req: NextRequest) {
   if (!parsed.ok) return apiErrorResponse(parsed.error, parsed.status);
 
   const profile = parsed.value.profile ?? createDefaultProfile();
+  const client = parsed.value.aiConsent ? createLlmClient() : new NullClient();
   const result = await narrate(
     profile,
     parsed.value.band,
     parsed.value.pm25,
-    parsed.value.items as readonly NarrativeItem[]
+    parsed.value.items as readonly NarrativeItem[],
+    client
   );
 
   return securityJson(
