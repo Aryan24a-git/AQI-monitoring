@@ -47,7 +47,7 @@ All caches use the LRU implementation in `src/lib/cache.ts`.
 - **CSP** blocks inline scripts, disallows `eval`, restricts connect-src to known hosts
 - **Rate limiting** is per-client IP, 10 req/min for /api/plan, 60 req/min for /api/aqi
 - **LLM budget guard** caps daily token usage; excess requests get deterministic fallback
-- **SSRF guard** — outbound HTTP uses a fixed allowlist: `open-meteo.com`, `api.open-meteo.com`, `generativelanguage.googleapis.com`
+- **SSRF guard** — outbound HTTP uses a fixed allowlist: `open-meteo.com`, `api.open-meteo.com`, `api.groq.com`
 
 ## Deployment Architecture
 

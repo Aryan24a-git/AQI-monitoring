@@ -3,7 +3,7 @@
 ## Threat Model
 
 ### Assets
-1. **Gemini API key** — if leaked, attacker can run up billing
+1. **Groq API key** — if leaked, attacker can run up billing
 2. **User location** — if logged, creates privacy risk
 3. **User profile** — household vulnerability flags, sensitive
 4. **LLM output** — if injected, could deliver harmful advice
@@ -16,7 +16,7 @@
 | LLM cost abuse | Unbounded requests | Rate limiting (`RATE_LIMITS` in `src/server/security/limits.ts`, e.g., 6/min/IP for `/api/plan`), daily call budget guard, deterministic fallback on budget exceeded | SEC-003 |
 | Prompt injection | User-supplied text in prompts | Delimiters (XML tags), no tool authority, schema-validated output, action-ID allowlist | SEC-004 |
 | XSS via LLM text | Rendered HTML from model | dangerouslySetInnerHTML banned, all LLM text rendered as plain text or controlled markdown | SEC-007 |
-| SSRF | User-supplied coordinates or city names used in URLs | Fixed host allowlist (open-meteo.com, generativelanguage.googleapis.com), no URL construction from user input | SEC-006 |
+| SSRF | User-supplied coordinates or city names used in URLs | Fixed host allowlist (open-meteo.com, api.groq.com), no URL construction from user input | SEC-006 |
 | Location privacy | Precise GPS coordinates logged or persisted | Coordinates rounded to 2dp before any use, never logged, never stored server-side | DATA-001, SEC-009 |
 | Dependency attack | Malicious npm package | npm audit in CI, Dependabot, lockfile committed | SEC-008 |
 | Request flood | High request volume | Rate limiting, body size limit (10KB), request timeout (30s) | SEC-003, SEC-010 |
@@ -35,18 +35,17 @@ All inputs validated with Zod at the API boundary. Never trust:
 ### Secrets Management (SEC-002)
 ```
 # Server-side only (.env.local, never .env)
-GEMINI_API_KEY=...
+GROQ_API_KEY=...
 
 # Never these patterns:
-NEXT_PUBLIC_GEMINI_API_KEY  # ❌ exposed to client
+NEXT_PUBLIC_GROQ_API_KEY  # ❌ exposed to client
 ```
-CI runs `grep -r "GEMINI_API_KEY" .next/static` to verify no key in bundle.
+CI runs `grep -r "GROQ_API_KEY" .next/static` to verify no key in bundle.
 
 ### Rate Limiting (SEC-003)
 Authoritative table defined in `src/server/security/limits.ts` (`RATE_LIMITS`):
 ```typescript
 // /api/plan: 6/min, /api/plan/narrate: 6/min, /api/playbook: 15/min
-// /api/audit: 4/min, /api/ask: 8/min, /api/bulletin: 10/min
 // /api/air-quality: 30/min, /api/geocode: 30/min, /api/city-scenario: 30/min
 // Daily LLM call cap: configurable via LLM_DAILY_CALL_CAP env
 ```
@@ -98,7 +97,7 @@ Content-Security-Policy:
 ### SSRF Prevention (SEC-006)
 Outbound HTTP calls are only made to:
 - `api.open-meteo.com` (AQI + geocoding)
-- `generativelanguage.googleapis.com` (Gemini)
+- `api.groq.com` (Groq)
 
 Implementation: allowlist checked before every fetch call. No URL construction from user input.
 
@@ -117,5 +116,5 @@ CI runs on every PR:
   run: npm audit --audit-level=moderate
 
 - name: Secret scan
-  run: grep -r "GEMINI_API_KEY\|sk-\|AIza" .next/static/ && echo "FAIL: secrets in bundle" && exit 1 || echo "OK"
+  run: grep -r "GROQ_API_KEY\|sk-\|AIza" .next/static/ && echo "FAIL: secrets in bundle" && exit 1 || echo "OK"
 ```

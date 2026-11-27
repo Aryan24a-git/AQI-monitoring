@@ -181,6 +181,15 @@ VayuSaathi provides actionable physical engineering and environmental lifestyle 
 
 ---
 
+## 🔍 Honest Limitations
+
+- **Air quality data**: NAQI calculations use Open-Meteo regional model concentrations (`pm2_5`, `pm10`, `no2`); when a WAQI station within 25 km and 3 hours is available, its reading is displayed separately as *Station AQI (US scale)*.
+- **Impact estimates**: Exposure reduction %, cigarette equivalents, and CO₂/NOx savings are rough literature-based estimates with visible source notes, not clinical or sensor-verified measurements.
+- **Device-local community state**: Saved ward pinboard reports, completed pledges, and household profile settings stay in your browser (`localStorage`) and are not synced to other devices or a server database.
+- **AI consent**: Your question and the day's air quality data are sent to Groq (`openai/gpt-oss-120b`) only after you grant explicit consent (`Allow`), enforced both in the browser and by server routes (`aiConsent: true`).
+
+---
+
 ## 🌐 Data Credits & Attribution
 
 | Provider | Data Used | License / Terms |

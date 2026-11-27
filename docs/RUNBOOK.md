@@ -28,7 +28,7 @@ Logs are emitted in newline-delimited JSON with automatic redaction of coordinat
 | `counter` | `providerFailure` | Upstream Open-Meteo failure | Check upstream status; confirm fallback active |
 | `counter` | `breakerOpen` | Circuit breaker tripped (>5 errors in 30s) | Service sheds upstream load; self-heals after 30s |
 | `counter` | `cacheHit` | AQI or geocoding in-memory cache hit | Normal; should be >70% under moderate traffic |
-| `counter` | `fallbackRate` | LLM planning failed; rules engine served plan | Check Gemini API status or quota |
+| `counter` | `fallbackRate` | LLM planning failed; rules engine served plan | Check Groq API status or quota |
 
 ### Sample Log Ingestion Query (e.g. CloudWatch / Datadog / Grafana Loki)
 ```json
@@ -42,8 +42,8 @@ Logs are emitted in newline-delimited JSON with automatic redaction of coordinat
 ### Alert 1: Elevated Fallback Rate (`fallbackRate > 20%` over 5 min)
 - **Severity**: P3 (Minor - User experience degrades gracefully to deterministic Basic Mode; domain rules remain 100% intact).
 - **Causes**:
-  1. `GEMINI_API_KEY` expired or exhausted daily quota (`LLM_DAILY_CALL_CAP`).
-  2. Gemini API experiencing elevated latency or outages.
+  1. `GROQ_API_KEY` expired or exhausted daily quota (`LLM_DAILY_CALL_CAP`).
+  2. Groq API experiencing elevated latency or outages.
 - **Triage**:
   1. Inspect container logs: `docker logs clear-air-companion | grep fallbackReason`.
   2. If quota exceeded, verify rate limits or increase daily call cap if appropriate.

@@ -51,7 +51,6 @@
 - **Application Mitigation**: Every incoming API request passes through `readJsonBoundary(req, Schema, requestId)` in `src/server/security/limits.ts`.
 - **Enforced Boundary**:
   - `MAX_BODY_BYTES = 16_384` (16 kB for JSON endpoints)
-  - `MAX_AUDIT_BODY_BYTES = 262_144` (256 kB for Base64 photo audit)
   - If `Content-Length` or the streamed chunk exceeds these bytes, the server terminates reading and immediately returns HTTP 413 `PAYLOAD_TOO_LARGE` **before Zod is invoked**.
 - **Practical Exploitability**: **Negligible in deployed application**.
 
@@ -106,7 +105,6 @@ x-frame-options: DENY
 |---|---|---|---|---|
 | `/api/plan` | 6 req | 60 sec | `MemoryBucketStore` | SHA-256(IP + salt) |
 | `/api/plan/narrate` | 6 req | 60 sec | `MemoryBucketStore` | SHA-256(IP + salt) |
-| `/api/audit` | 4 req | 60 sec | `MemoryBucketStore` | SHA-256(IP + salt) |
 | `/api/ask` | 8 req | 60 sec | `MemoryBucketStore` | SHA-256(IP + salt) |
 | `/api/bulletin` | 10 req | 60 sec | `MemoryBucketStore` | SHA-256(IP + salt) |
 | `/api/city-scenario` | 30 req | 60 sec | `MemoryBucketStore` | SHA-256(IP + salt) |
@@ -117,9 +115,9 @@ x-frame-options: DENY
 
 ## 6. Secret Hygiene & Codebase Scan
 
-- **Automated Bundle Scan**: Recursively scanned `.next/static`, `public/`, and source files for `AIzaSy` (Google API keys) and `GEMINI_API_KEY`.
+- **Automated Bundle Scan**: Recursively scanned `.next/static`, `public/`, and source files for `AIzaSy` (Google API keys) and `GROQ_API_KEY`.
 - **Result**: `SCAN COMPLETE: ZERO CLIENT-SIDE LEAKS`.
-- **Runtime Key Access**: `process.env.GEMINI_API_KEY` is loaded strictly on the server in `src/server/llm/geminiClient.ts`. No `NEXT_PUBLIC_` prefixes are used for secrets.
+- **Runtime Key Access**: `process.env.GROQ_API_KEY` is loaded strictly on the server in `src/server/llm/GroqClient.ts`. No `NEXT_PUBLIC_` prefixes are used for secrets.
 
 ---
 
@@ -139,5 +137,5 @@ x-frame-options: DENY
 
 To advance this release to `PRODUCTION READY`, the following manual actions must be executed:
 1. **Risk Acceptance**: Human security owner must review the 15 `npm audit` advisories and record written risk acceptance for `zod@3` and `next@14` given the mitigating boundary protections.
-2. **Environment Secret Provisioning**: Set `GEMINI_API_KEY` securely in cloud environment variables (e.g. Google Secret Manager / Cloud Run env).
+2. **Environment Secret Provisioning**: Set `GROQ_API_KEY` securely in cloud environment variables (e.g. Google Secret Manager / Cloud Run env).
 3. **TLS & HSTS Enforcement**: Provision a valid TLS certificate and configure reverse proxy / Cloud CDN to enforce HTTP Strict Transport Security (`Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`).

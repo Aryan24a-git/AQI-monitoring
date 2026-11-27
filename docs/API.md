@@ -24,7 +24,7 @@ Standard codes: `BAD_REQUEST`, `VALIDATION_ERROR`, `PAYLOAD_TOO_LARGE`, `RATE_LI
 Liveness probe. Returns `{ status: "ok", timestamp, version }`. Rate limit: 30/min.
 
 ### GET /api/ready
-Readiness probe. Returns `{ status: "ready", timestamp, llm }` where `llm` is `true` only when `LLM_ENABLED`, `GEMINI_API_KEY` is present, and the configured `GEMINI_MODEL` has not failed with a 404 model-not-found error. Rate limit: 30/min.
+Readiness probe. Returns `{ status: "ready", timestamp, llm }` where `llm` is `true` only when `LLM_ENABLED`, `GROQ_API_KEY` is present, and the configured `GROQ_MODEL` has not failed with a 404 model-not-found error. Rate limit: 30/min.
 
 ---
 
@@ -60,13 +60,6 @@ Synthesizes dynamic playbook items (indoor hacks, emission swaps, pledges) for a
 
 ## 4. Multimodal IAQ Audit & Community
 
-### POST /api/audit
-Multimodal room/window/mask inspection.
-- Body limit: 256 kB (`MAX_AUDIT_BODY_BYTES`) to accommodate compressed Base64 photo.
-- Validates JPEG, PNG, or WebP magic bytes.
-- When `GEMINI_API_KEY` is present: Uses configured `GEMINI_MODEL` (default `gemini-3.8-flash`) Vision.
-- When key is absent or model fails: Returns honest Basic Mode architectural checklist with `isAiInspected: false`.
-- Rate limit: 4/min.
 
 ### POST /api/ask
 Bounded follow-up Q&A with rate limiting, prompt injection defenses, and medical refusal guardrails.

@@ -17,9 +17,9 @@ This document establishes bidirectional traceability from Problem Space & Evalua
 | **REQ-006** | Sustainable alternatives | Problem | Rules + catalog | 02, 04, 10 | Unit | High | **VERIFIED** | `tests/unit/catalog.test.ts`, `src/domain/catalog/actions.alternatives.ts` |
 | **REQ-007** | Direct impact explanation | Problem | Domain + UI | 02, 04, 09, 10, 11 | Unit, E2E | Critical | **VERIFIED** | `tests/unit/impact.test.ts`, `src/domain/explain.ts` |
 | **REQ-008** | Sensitive-group safety | Problem | Rules + UI | 02, 04, 09 | Unit, review | Critical | **VERIFIED** | `tests/unit/rules.test.ts`, `src/domain/rules/safety.ts` |
-| **REQ-009** | Grounded GenAI (Gemini) | Problem | LLM module | 05, 06, 22 | Contract, guardrail | Critical | **UNVERIFIED** | Reset for CR (Single provider: Gemini, rewrites wording only) |
+| **REQ-009** | Grounded GenAI (Groq) | Problem | LLM module | 05, 06, 22 | Contract, guardrail | Critical | **UNVERIFIED** | Reset for CR (Single provider: Groq, rewrites wording only) |
 | **REQ-010** | Deterministic fallback | Problem | Rules + API + UI | 04, 05, 06, 09, 12 | Failure injection | Critical | **VERIFIED** | `tests/unit/llm-grounding.test.ts`, `src/domain/plan.ts` (0-key mode) |
-| **REQ-011** | Bounded Q&A (Multilingual) | Problem | LLM + UI | 05, 12, 22 | Guardrail, E2E | Medium | **UNVERIFIED** | Reset for CR (Gemini English, Hindi, Hinglish bounded scope) |
+| **REQ-011** | Bounded Q&A (Multilingual) | Problem | LLM + UI | 05, 12, 22 | Guardrail, E2E | Medium | **UNVERIFIED** | Reset for CR (Groq English, Hindi, Hinglish bounded scope) |
 | **REQ-012** | Share and print | Problem | UI | 11 | Unit, E2E | Medium | **VERIFIED** | `tests/unit/plan-ui.test.tsx`, `src/features/share/planToText.ts` |
 | **REQ-013** | Plain language, Hindi in scope | EC-006 | UI | 07, 14, 23 | Readability script | High | **UNVERIFIED** | Reset for CR (Bilingual WhatsApp & Copilot Hindi content) |
 | **REQ-014** | Source and freshness display | Problem | UI | 03, 09 | Component | High | **VERIFIED** | `src/features/plan/AirQualityCard.tsx`, `provider-resilience.test.ts` |
@@ -36,10 +36,10 @@ This document establishes bidirectional traceability from Problem Space & Evalua
 | **REQ-025** | CPCB NAQI Computation | Problem | Domain | 21 | Unit tests | Critical | **UNVERIFIED** | New requirement (pure function CPCB breakpoints & sub-indices) |
 | **NFR-001** | Simple modular monolith | EC-001 | Architecture | 00, 19 | Audit, madge | High | **VERIFIED** | Next.js 14 App Router, 0 DB, 0 microservices, madge 0 cycles |
 | **NFR-002** | Low-end, slow network | EC-006 | Frontend | 07, 13 | Lighthouse | High | **VERIFIED** | 116 kB First Load JS, Service Worker caching, 320px reflow |
-| **NFR-003** | 12-factor config | EC-001/003 | Config | 00, 01, 22 | Unit | High | **UNVERIFIED** | Reset for CR (GEMINI_API_KEY, GEMINI_MODEL validation) |
+| **NFR-003** | 12-factor config | EC-001/003 | Config | 00, 01, 22 | Unit | High | **UNVERIFIED** | Reset for CR (GROQ_API_KEY, GROQ_MODEL validation) |
 | **NFR-004** | Strict quality limits | EC-001 | All | 00, 19, 24 | Lint, reports | High | **VERIFIED** | 0 files > 250 lines, functions < 40 lines, strict TS, ESLint clean |
 | **SEC-001** | Zod at all boundaries | EC-003 | API | 01, 06 | Unit, fuzz | Critical | **VERIFIED** | `tests/integration/api-security.test.ts`, `src/server/security/limits.ts`|
-| **SEC-002** | Secrets server-only | EC-003 | Platform | 00, 05, 22 | Bundle grep, scans | Critical | **UNVERIFIED** | Reset for CR (GEMINI_API_KEY server-only; zero browser key access) |
+| **SEC-002** | Secrets server-only | EC-003 | Platform | 00, 05, 22 | Bundle grep, scans | Critical | **UNVERIFIED** | Reset for CR (GROQ_API_KEY server-only; zero browser key access) |
 | **SEC-003** | Rate limit, LLM budget | EC-003/004 | API | 05, 06, 22 | Integration | High | **UNVERIFIED** | Reset for CR (Per-client token bucket on all AI routes) |
 | **SEC-004** | Prompt-injection defenses | EC-003 | LLM | 05, 12, 22 | Adversarial corpus | Critical | **UNVERIFIED** | Reset for CR (Multilingual injection defense in EN/HI/Hinglish) |
 | **SEC-005** | Headers, CSP, CORS | EC-003 | Platform | 06, 16, 22 | Header tests | High | **UNVERIFIED** | Reset for CR (Strict CSP with zero external CDNs) |
@@ -59,7 +59,7 @@ This document establishes bidirectional traceability from Problem Space & Evalua
 | **A11Y-007**| Drawer trap, keyboard dropzone | EC-006 | UI | 23 | axe + manual | High | **UNVERIFIED** | New requirement (Drawer focus trap, dropzone keyboard, lang="hi") |
 | **PERF-001**| LCP and JS budget | EC-004 | Frontend | 07, 13, 23 | Lighthouse | High | **UNVERIFIED** | Reset for CR (Re-measured build: 116 kB First Load JS ≤ 150 kB) |
 | **PERF-002**| AQI cache, coalescing | EC-004 | API | 03, 13 | Unit, measurement | High | **VERIFIED** | `tests/unit/provider-resilience.test.ts` (1 upstream call for identical 2dp)|
-| **PERF-003**| One LLM call, cache | EC-004 | LLM | 05, 13, 22 | Unit, measurement | High | **UNVERIFIED** | Reset for CR (Gemini request caching and token caps) |
+| **PERF-003**| One LLM call, cache | EC-004 | LLM | 05, 13, 22 | Unit, measurement | High | **UNVERIFIED** | Reset for CR (Groq request caching and token caps) |
 | **PERF-004**| Bounded memory | EC-004 | API | 03, 13 | Unit, heap test | Medium | **VERIFIED** | `scripts/bench-cache.ts` (Retains exactly 500 entries after 10,000 inserts)|
 | **PERF-005**| Plan path p95 | EC-004 | Domain | 04, 13 | Benchmark | Medium | **VERIFIED** | `scripts/benchmark-plan.ts` (p95 = 0.087 ms, threshold 300 ms) |
 | **PERF-006**| Lazy load non-critical widgets | EC-004 | Frontend | 23 | Bundle analysis | Medium | **UNVERIFIED** | New requirement (Code splitting and lazy loading of modal drawers) |
@@ -69,14 +69,13 @@ This document establishes bidirectional traceability from Problem Space & Evalua
 | **OBS-001** | Structured logs, request ID | Ops | Platform | 01, 06, 18 | Unit | Medium | **VERIFIED** | `src/server/http/requestId.ts`, `tests/unit/server-logger.test.ts` |
 | **OBS-002** | Counters in logs | EC-004 | Platform | 03, 18 | Unit | Normal | **VERIFIED** | Telemetry counters: `cacheHit`, `providerFailure`, `breakerOpen`, `fallbackRate`|
 | **TEST-001**| Domain coverage 90% | EC-005 | Domain | 04, 15, 24 | Coverage | High | **UNVERIFIED** | Reset for CR (Coverage on new domain modules: CPCB NAQI, Playbook) |
-| **TEST-002**| API integration tests | EC-005 | API | 06, 15, 24 | CI | High | **UNVERIFIED** | Reset for CR (Integration tests on `/api/playbook`, `/api/audit`, etc.)|
 | **TEST-003**| Component tests | EC-005 | UI | 08 to 12, 15, 24 | CI | Medium | **UNVERIFIED** | Reset for CR (Tests on VayuSaathi hero, tabs, and drawer) |
 | **TEST-004**| E2E plus axe across viewports| EC-005/006 | E2E | 15, 17, 24 | CI | Medium | **UNVERIFIED** | Reset for CR (28 Playwright tests across mobile, tablet, desktop) |
-| **TEST-005**| LLM contract and guardrails | EC-005 | LLM | 05, 15, 24 | CI | High | **UNVERIFIED** | Reset for CR (Gemini guardrail fixtures in CI without live keys) |
+| **TEST-005**| LLM contract and guardrails | EC-005 | LLM | 05, 15, 24 | CI | High | **UNVERIFIED** | Reset for CR (Groq guardrail fixtures in CI without live keys) |
 | **TEST-006**| CI gate | EC-005 | CI | 15, 24 | CI run | Medium | **UNVERIFIED** | Reset for CR (`npm run check` pipeline) |
 | **DEP-001** | Reproducible build and image | Ops | Deploy | 18 | docker build/run | High | **UNVERIFIED** | Multi-stage Dockerfile written; container execution unverified |
 | **DEP-002** | CI pipeline | Ops | CI | 15, 18 | CI run | High | **VERIFIED** | `.github/workflows/ci.yml` and `.github/workflows/cd.yml` |
-| **DEP-003** | Env contract, fail-fast | Ops | Platform | 00, 01, 22 | Unit | High | **UNVERIFIED** | Reset for CR (Switched from Anthropic to Gemini vars) |
+| **DEP-003** | Env contract, fail-fast | Ops | Platform | 00, 01, 22 | Unit | High | **UNVERIFIED** | Reset for CR (Switched from Anthropic to Groq vars) |
 | **DEP-004** | Rollback and verification | Ops | Deploy | 18 | Rehearsal | Medium | **UNVERIFIED** | Rollback procedure documented in `docs/RUNBOOK.md` |
 | **DATA-001**| Data minimization | Privacy | All | 01, 08, 16 | Review, tests | Critical | **VERIFIED** | Coordinates truncated to 2dp (~1 km); zero server persistence |
 | **DATA-002**| Versioned local profile, clear | Privacy | UI | 01, 08, 21 | Unit, E2E | High | **UNVERIFIED** | Reset for CR (Schema v2 with automatic migration from v1) |

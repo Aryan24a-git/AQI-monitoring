@@ -64,7 +64,7 @@ Run: `npm run test:integration`
 MSW handlers mock:
 - Open-Meteo AQI API (success, timeout, 500, empty response)
 - Open-Meteo Geocoding API (success, not found)
-- Gemini API (success, quota exceeded, timeout, invalid JSON)
+- Groq API (success, quota exceeded, timeout, invalid JSON)
 
 Test scenarios:
 ```

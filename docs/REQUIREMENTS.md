@@ -15,9 +15,9 @@
 | REQ-006 | Sustainable alternatives (commute, cooking, heating, waste, shopping) with feasibility and cost tier                                                        | High     | Rules + catalog | Unit                       | VERIFIED   |
 | REQ-007 | Every recommendation shows direct impact: what changes, magnitude range, basis, confidence, benefit type (personal vs emissions)                            | Critical | Domain + UI     | Unit + E2E                 | VERIFIED   |
 | REQ-008 | Sensitive-group-aware guidance, medical disclaimer, red-flag escalation copy                                                                                | Critical | Rules + UI      | Unit + manual review       | VERIFIED   |
-| REQ-009 | Grounded GenAI via Gemini: LLM rewrites phrasing/explainers for curated actions only; zero invented advice; structured output validated                     | Critical | AI module       | Contract + guardrail tests | UNVERIFIED |
+| REQ-009 | Grounded GenAI via Groq: LLM rewrites phrasing/explainers for curated actions only; zero invented advice; structured output validated                     | Critical | AI module       | Contract + guardrail tests | UNVERIFIED |
 | REQ-010 | Deterministic fallback plan when LLM or AQI provider unavailable                                                                                            | Critical | AI + API        | Failure-injection tests    | VERIFIED   |
-| REQ-011 | Bounded follow-up Q&A via Gemini limited to air quality scope (multilingual: English, Hindi, Hinglish)                                                      | Medium   | AI + UI         | Guardrail tests            | UNVERIFIED |
+| REQ-011 | Bounded follow-up Q&A via Groq limited to air quality scope (multilingual: English, Hindi, Hinglish)                                                      | Medium   | AI + UI         | Guardrail tests            | UNVERIFIED |
 | REQ-012 | Shareable text and printable plan for communities                                                                                                           | Medium   | UI              | Component + E2E            | UNVERIFIED |
 | REQ-013 | Plain-language copy, externalized strings, Hindi language support in scope                                                                                  | High     | UI              | Lint + review              | UNVERIFIED |
 | REQ-014 | Display data source, timestamp, staleness warning                                                                                                           | High     | UI              | Component test             | VERIFIED   |
@@ -47,7 +47,7 @@
 | ID      | Requirement                                                                                            | Priority | Area          | Validation                | Status     |
 | ------- | ------------------------------------------------------------------------------------------------------ | -------- | ------------- | ------------------------- | ---------- |
 | SEC-001 | Zod validation of every request, env and external response                                             | Critical | API           | Unit + fuzz               | VERIFIED   |
-| SEC-002 | Secrets server-only, never in client bundle or repo (GEMINI_API_KEY server-only)                       | Critical | Platform      | Bundle grep + secret scan | UNVERIFIED |
+| SEC-002 | Secrets server-only, never in client bundle or repo (GROQ_API_KEY server-only)                       | Critical | Platform      | Bundle grep + secret scan | UNVERIFIED |
 | SEC-003 | Per-client rate limiting and daily LLM budget guard                                                    | High     | API           | Integration               | UNVERIFIED |
 | SEC-004 | Prompt-injection defenses: delimiting, no tool authority, schema-validated output, action-ID allowlist | Critical | AI            | Adversarial tests         | UNVERIFIED |
 | SEC-005 | Security headers, strict CSP, same-origin CORS                                                         | High     | Platform      | Header test               | UNVERIFIED |
@@ -114,7 +114,7 @@
 | ------- | -------------------------------------------------------------- | -------- | -------- | ----------- | ---------- |
 | DEP-001 | Reproducible production build and container image              | High     | Deploy   | Build + run | UNVERIFIED |
 | DEP-002 | CI pipeline: lint, types, tests, build, audit, secrets         | High     | CI       | CI run      | UNVERIFIED |
-| DEP-003 | .env.example complete (GEMINI_API_KEY); boot fails fast on bad env | High | Platform | Unit    | UNVERIFIED |
+| DEP-003 | .env.example complete (GROQ_API_KEY); boot fails fast on bad env | High | Platform | Unit    | UNVERIFIED |
 | DEP-004 | Rollback and production verification steps documented          | Medium   | Deploy   | Manual      | UNVERIFIED |
 
 ## Data & Privacy Requirements

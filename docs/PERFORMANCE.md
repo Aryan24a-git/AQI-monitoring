@@ -28,7 +28,6 @@ Route (app)                              Size     First Load JS
 ├ ƒ /api/air-quality                     0 B                0 B
 ├ ƒ /api/aqi                             0 B                0 B
 ├ ƒ /api/ask                             0 B                0 B
-├ ƒ /api/audit                           0 B                0 B
 ├ ƒ /api/bulletin                        0 B                0 B
 ├ ƒ /api/city-scenario                   0 B                0 B
 ├ ƒ /api/followup                        0 B                0 B
@@ -63,8 +62,6 @@ Route (app)                              Size     First Load JS
 | `GET /api/city-scenario?q=mumbai` | Live Open-Meteo query | 180 ms | 340 ms | In-memory LRU cache (15 min TTL) |
 | `POST /api/plan` (mode=basic) | Rule-based planning | 4.2 ms | 8.9 ms | Pure deterministic catalog evaluation |
 | `POST /api/bulletin` | WhatsApp RWA advisory | 3.1 ms | 6.8 ms | Deterministic bilingual template engine |
-| `POST /api/audit` (Basic Mode) | Room gap IAQ audit | 5.2 ms | 11.4 ms | Deterministic architectural checklist |
-| `POST /api/audit` (Vision AI) | Gemini 1.5 Flash Vision | 1,240 ms | 2,100 ms | Basic Mode fallback on timeout (> 4s) |
 
 ---
 

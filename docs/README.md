@@ -45,7 +45,7 @@ Copy `.env.example` and fill in values:
 
 ```bash
 # Required
-GEMINI_API_KEY=your-gemini-api-key-here
+GROQ_API_KEY=your-Groq-api-key-here
 
 # Optional (defaults shown)
 LLM_DAILY_TOKEN_BUDGET=1000000
@@ -58,7 +58,7 @@ RATE_LIMIT_AQI_PER_MINUTE=60
 NODE_ENV=development
 ```
 
-The app starts without `GEMINI_API_KEY` and uses deterministic fallback plans.
+The app starts without `GROQ_API_KEY` and uses deterministic fallback plans.
 
 ## Development
 
@@ -122,7 +122,7 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system design.
 | Air Quality (PM2.5, AQI) | [Open-Meteo](https://open-meteo.com/en/docs/air-quality-api) | CC BY 4.0 |
 | Geocoding | [Open-Meteo Geocoding](https://open-meteo.com/en/docs/geocoding-api) | CC BY 4.0 |
 | Impact Evidence | WHO 2021, EPA 2023, CPCB | Cited per action in catalog |
-| AI Narrative | Google Gemini (server-side) | — |
+| AI Narrative | Groq (server-side) | — |
 
 ## Personas
 
