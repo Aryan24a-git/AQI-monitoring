@@ -23,7 +23,7 @@ function AiTailoredBanner({ playbook }: { playbook: PlaybookData }) {
     <div
       role="region"
       aria-label="AI Tailored Plan Notice"
-      className="p-4 rounded-2xl bg-gradient-to-r from-teal-900 via-slate-900 to-indigo-950 text-white shadow-md border border-teal-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+      className="p-4 rounded-2xl bg-slate-900 text-white shadow-md border border-teal-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
     >
       <div className="flex items-start gap-3">
         <span className="p-2 rounded-xl bg-teal-500/20 text-teal-300 border border-teal-400/30 shrink-0 mt-0.5">
