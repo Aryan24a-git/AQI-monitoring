@@ -9,7 +9,7 @@ export const BudgetBandSchema = z.enum(['none', 'low', 'medium', 'high']);
 export type BudgetBand = z.infer<typeof BudgetBandSchema>;
 
 export const HousingTypeSchema = z.enum(['well_sealed', 'average', 'poorly_sealed', 'open']);
-export type HousingType = z.infer<typeof HousingTypeSchema>;
+type HousingType = z.infer<typeof HousingTypeSchema>;
 
 export const CookingFuelSchema = z.enum([
   'lpg',
@@ -19,7 +19,7 @@ export const CookingFuelSchema = z.enum([
   'electric',
   'induction',
 ]);
-export type CookingFuel = z.infer<typeof CookingFuelSchema>;
+type CookingFuel = z.infer<typeof CookingFuelSchema>;
 
 export const HeatingTypeSchema = z.enum([
   'none',
@@ -30,7 +30,7 @@ export const HeatingTypeSchema = z.enum([
   'coal',
   'other',
 ]);
-export type HeatingType = z.infer<typeof HeatingTypeSchema>;
+type HeatingType = z.infer<typeof HeatingTypeSchema>;
 
 export const CommuteTypeSchema = z.enum([
   'walk',
@@ -57,7 +57,7 @@ export const VulnerabilityFlagSchema = z.enum([
 export type VulnerabilityFlag = z.infer<typeof VulnerabilityFlagSchema>;
 
 export const AgeBandSchema = z.enum(['infant', 'child', 'teen', 'adult', 'elderly']);
-export type AgeBand = z.infer<typeof AgeBandSchema>;
+type AgeBand = z.infer<typeof AgeBandSchema>;
 
 export const HouseholdMemberSchema = z.object({
   ageBand: AgeBandSchema,
@@ -89,7 +89,7 @@ export const VulnerabilityV2Schema = z.enum(['kids', 'seniors', 'asthma', 'none'
 export type VulnerabilityV2 = z.infer<typeof VulnerabilityV2Schema>;
 
 export const PurifierV2Schema = z.enum(['none', 'one_room', 'whole_home']);
-export type PurifierV2 = z.infer<typeof PurifierV2Schema>;
+type PurifierV2 = z.infer<typeof PurifierV2Schema>;
 
 export const CommuteModeV2Schema = z.enum(['solo_car', 'two_wheeler', 'public_transit', 'wfh']);
 export type CommuteModeV2 = z.infer<typeof CommuteModeV2Schema>;

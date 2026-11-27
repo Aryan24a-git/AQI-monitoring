@@ -6,7 +6,7 @@ import { DailyCallBudget } from './budget';
 import { NARRATION_SYSTEM_PROMPT, PROMPT_VERSION } from './prompts';
 import { NarrativeSchema, type NarrativeOutput } from './schema';
 import { validateNarrative } from './guardrails';
-import { logger } from '../../lib/logger';
+import { logger } from '../logging/logger';
 
 const cache = new LruCache<string, NarrativeOutput>({ maxEntries: 100, ttlMs: 60 * 60 * 1000 });
 const budget = new DailyCallBudget();
@@ -109,7 +109,7 @@ function extractNumbers(text: string): readonly string[] {
 }
 
 function fallback(items: readonly NarrativeItem[], band: string, reason: string): NarrateResult {
-  logger.warn('llmFallback', { fallbackReason: reason });
+  logger.warn({ fallbackReason: reason }, 'llmFallback');
   const narrative: NarrativeOutput = {
     headline: `Protective plan for ${band}`,
     itemNotes: items.map((item) => ({

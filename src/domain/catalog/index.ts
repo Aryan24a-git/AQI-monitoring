@@ -7,9 +7,6 @@ import { INDOORS_ACTIONS } from './actions.indoors';
 import { ALTERNATIVES_ACTIONS } from './actions.alternatives';
 
 export * from './schema';
-export { TODAY_ACTIONS } from './actions.today';
-export { INDOORS_ACTIONS } from './actions.indoors';
-export { ALTERNATIVES_ACTIONS } from './actions.alternatives';
 
 export const ACTION_CATALOG: readonly ActionEntry[] = [
   ...TODAY_ACTIONS,

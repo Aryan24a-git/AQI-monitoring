@@ -14,21 +14,12 @@ interface ImpactMeterProps {
   onGenerateAI: () => void;
 }
 
-export function ImpactMeter({
-  playbook,
-  impact,
-  completedIds,
-  playbookSource,
-  isGeneratingAI,
-  onGenerateAI,
-}: ImpactMeterProps) {
+function computeEarned(playbook: PlaybookData, impact: CalculatedImpact, completedIds: string[]) {
   const allItems = [...playbook.iaqHacks, ...playbook.emissionSwaps];
   const completed = allItems.filter((i) => completedIds.includes(i.id));
-
   const totalCount = allItems.length;
   const doneCount = completed.length;
   const pct = totalCount > 0 ? Math.round((doneCount / totalCount) * 100) : 0;
-
   const earnedExposure = Math.min(
     impact.maxExposureDropPct,
     completed.reduce((sum, item) => sum + (Number(item.exposurePct) || 0), 0)
@@ -37,7 +28,91 @@ export function ImpactMeter({
   const earnedCo2 = Number(
     completed.reduce((sum, item) => sum + (Number(item.co2Kg) || 0), 0).toFixed(2)
   );
+  return { totalCount, doneCount, pct, earnedExposure, earnedCigs, earnedCo2 };
+}
 
+function MetricTile({
+  label,
+  value,
+  suffix,
+  colorClass,
+}: {
+  label: string;
+  value: string;
+  suffix: string;
+  colorClass: string;
+}) {
+  return (
+    <div className="bg-stone-50 rounded-xl px-3 py-2 border border-stone-200/70">
+      <div className="text-[11px] text-slate-600 font-medium">{label}</div>
+      <div className={`font-bold text-sm sm:text-base ${colorClass}`}>
+        <span>{value}</span>
+        <span className="text-[11px] font-medium text-slate-600">{suffix}</span>
+      </div>
+    </div>
+  );
+}
+
+function SourceBadge({
+  playbookSource,
+  generatedAt,
+}: {
+  playbookSource: 'ai' | 'basic';
+  generatedAt?: string;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
+        playbookSource === 'ai'
+          ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+          : 'bg-stone-100 text-slate-600 border border-stone-200'
+      }`}
+    >
+      {playbookSource === 'ai' && <Sparkles className="w-3 h-3 text-indigo-600" />}
+      {playbookSource === 'ai'
+        ? `AI Grounded${generatedAt ? ` · ${generatedAt}` : ''}`
+        : 'Basic mode'}
+    </span>
+  );
+}
+
+function GenerateAiButton({
+  isGeneratingAI,
+  onGenerateAI,
+}: {
+  isGeneratingAI: boolean;
+  onGenerateAI: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onGenerateAI}
+      disabled={isGeneratingAI}
+      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs sm:text-sm font-semibold shadow-sm transition shrink-0 disabled:opacity-50"
+    >
+      {isGeneratingAI ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : (
+        <Sparkles className="w-4 h-4" />
+      )}
+      <span>{isGeneratingAI ? 'Personalizing...' : 'Generate Fresh AI Playbook'}</span>
+    </button>
+  );
+}
+
+export function ImpactMeter({
+  playbook,
+  impact,
+  completedIds,
+  playbookSource,
+  isGeneratingAI,
+  onGenerateAI,
+}: ImpactMeterProps) {
+  const { totalCount, doneCount, pct, earnedExposure, earnedCigs, earnedCo2 } = computeEarned(
+    playbook,
+    impact,
+    completedIds
+  );
   return (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -48,89 +123,40 @@ export function ImpactMeter({
                 <Activity className="w-4 h-4" />
               </span>
               <h3 className="font-bold text-base text-slate-900">Today’s Live Impact Meter</h3>
-              <span
-                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${
-                  playbookSource === 'ai'
-                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                    : 'bg-stone-100 text-slate-600 border border-stone-200'
-                }`}
-              >
-                {playbookSource === 'ai' && <Sparkles className="w-3 h-3 text-indigo-600" />}
-                {playbookSource === 'ai'
-                  ? `AI Grounded${playbook.generatedAt ? ` · ${playbook.generatedAt}` : ''}`
-                  : 'Basic mode'}
-              </span>
+              <SourceBadge playbookSource={playbookSource} generatedAt={playbook.generatedAt} />
             </div>
             <span className="text-xs font-bold text-teal-800">
               {doneCount} / {totalCount} actions completed today
             </span>
           </div>
-
           <div className="w-full h-3 bg-stone-100 rounded-full overflow-hidden border border-stone-200/70">
             <div
               className="h-full bg-gradient-to-r from-teal-600 to-emerald-500 rounded-full transition-all duration-500"
               style={{ width: `${pct}%` }}
             />
           </div>
-
           <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-1">
-            <div className="bg-stone-50 rounded-xl px-3 py-2 border border-stone-200/70">
-              <div className="text-[11px] text-slate-600 font-medium">
-                Exposure Cut (rough estimate)
-              </div>
-              <div className="font-bold text-sm sm:text-base text-teal-800">
-                <span>{earnedExposure}%</span>
-                <span className="text-[11px] font-medium text-slate-600">
-                  {' '}
-                  / {impact.maxExposureDropPct}%
-                </span>
-              </div>
-            </div>
-            <div className="bg-stone-50 rounded-xl px-3 py-2 border border-stone-200/70">
-              <div className="text-[11px] text-slate-600 font-medium">
-                Cigs Avoided (rough estimate)
-              </div>
-              <div className="font-bold text-sm sm:text-base text-emerald-800">
-                <span>{earnedCigs.toFixed(1)}</span>
-                <span className="text-[11px] font-medium text-slate-600"> today</span>
-              </div>
-            </div>
-            <div className="bg-stone-50 rounded-xl px-3 py-2 border border-stone-200/70">
-              <div className="text-[11px] text-slate-600 font-medium">
-                CO₂ Saved (rough estimate)
-              </div>
-              <div className="font-bold text-sm sm:text-base text-sky-800">
-                <span>{earnedCo2.toFixed(2)}</span>
-                <span className="text-[11px] font-medium text-slate-600"> kg</span>
-              </div>
-            </div>
+            <MetricTile
+              label="Exposure Cut (rough estimate)"
+              value={`${earnedExposure}%`}
+              suffix={` / ${impact.maxExposureDropPct}%`}
+              colorClass="text-teal-800"
+            />
+            <MetricTile
+              label="Cigs Avoided (rough estimate)"
+              value={earnedCigs.toFixed(1)}
+              suffix=" today"
+              colorClass="text-emerald-800"
+            />
+            <MetricTile
+              label="CO₂ Saved (rough estimate)"
+              value={earnedCo2.toFixed(2)}
+              suffix=" kg"
+              colorClass="text-sky-800"
+            />
           </div>
         </div>
-
-        <div className="lg:w-64 shrink-0 flex flex-col gap-2">
-          <button
-            type="button"
-            disabled={isGeneratingAI}
-            onClick={onGenerateAI}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-teal-700 hover:bg-teal-800 active:scale-[0.99] text-white text-sm font-semibold shadow-sm transition disabled:opacity-50"
-          >
-            {isGeneratingAI ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            <span>
-              {isGeneratingAI
-                ? 'Synthesizing...'
-                : playbookSource === 'ai'
-                  ? 'Regenerate Fresh AI Playbook'
-                  : 'Generate Fresh AI Playbook'}
-            </span>
-          </button>
-          <p className="text-[11px] text-slate-500 text-center leading-tight">
-            Synthesizes AI guidance grounded in today’s exact CPCB NAQI &amp; household math.
-          </p>
-        </div>
+        <GenerateAiButton isGeneratingAI={isGeneratingAI} onGenerateAI={onGenerateAI} />
       </div>
     </div>
   );

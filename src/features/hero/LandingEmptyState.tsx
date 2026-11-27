@@ -1,5 +1,3 @@
-// Live-data-first landing view shown when no city is loaded yet, while loading, or on error.
-// Satisfies: REQ-001, REQ-003, REQ-023, A11Y-001
 'use client';
 
 import React, { useState } from 'react';
@@ -16,6 +14,163 @@ interface LandingEmptyStateProps {
   onManualPm25: (pm25: number) => void;
 }
 
+function LoadingSkeleton() {
+  return (
+    <section
+      aria-busy="true"
+      aria-label="Loading live air quality"
+      className="bg-white rounded-2xl border border-stone-200 p-6 space-y-4 animate-pulse"
+    >
+      <div className="h-6 w-56 bg-stone-200 rounded-lg" />
+      <div className="h-24 bg-stone-100 rounded-xl" />
+      <div className="grid grid-cols-4 gap-3">
+        <div className="h-14 bg-stone-100 rounded-xl" />
+        <div className="h-14 bg-stone-100 rounded-xl" />
+        <div className="h-14 bg-stone-100 rounded-xl" />
+        <div className="h-14 bg-stone-100 rounded-xl" />
+      </div>
+    </section>
+  );
+}
+
+function ErrorAlert({
+  error,
+  lastCityQuery,
+  onRetry,
+  onOpenManual,
+}: {
+  error: string;
+  lastCityQuery: string | null;
+  onRetry: (c: string) => void;
+  onOpenManual: () => void;
+}) {
+  return (
+    <div
+      role="alert"
+      className="rounded-xl bg-amber-50 border border-amber-200 p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-900"
+    >
+      <span className="flex items-center gap-2 font-medium">
+        <AlertTriangle className="w-4 h-4 shrink-0" />
+        {error}
+      </span>
+      <div className="flex items-center gap-2">
+        {lastCityQuery && (
+          <button
+            type="button"
+            onClick={() => onRetry(lastCityQuery)}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-700 text-white font-semibold"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Retry
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onOpenManual}
+          className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 font-semibold text-amber-900"
+        >
+          Enter AQI manually
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ManualPmForm({ onManualPm25 }: { onManualPm25: (pm25: number) => void }) {
+  const [manualPm, setManualPm] = useState('180');
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const val = Number(manualPm);
+        if (Number.isFinite(val) && val > 0) onManualPm25(val);
+      }}
+      className="flex flex-wrap items-center gap-2 bg-stone-50 p-3 rounded-xl border border-stone-200"
+    >
+      <label htmlFor="manual-pm25" className="text-xs font-semibold text-slate-700">
+        PM2.5 (µg/m³):
+      </label>
+      <input
+        id="manual-pm25"
+        type="number"
+        min={1}
+        max={1000}
+        value={manualPm}
+        onChange={(e) => setManualPm(e.target.value)}
+        className="w-28 px-2.5 py-1.5 text-xs bg-white border border-stone-300 rounded-lg"
+      />
+      <button
+        type="submit"
+        className="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold"
+      >
+        Apply Manual Reading
+      </button>
+    </form>
+  );
+}
+
+function CitySearchBar({
+  onSubmit,
+  onUseGeolocation,
+}: {
+  onSubmit: (city: string) => void;
+  onUseGeolocation: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (query.trim()) onSubmit(query.trim());
+      }}
+      className="flex flex-col sm:flex-row gap-2.5"
+    >
+      <div className="relative flex-1">
+        <MapPin className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <input
+          type="text"
+          aria-label="Search city"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search Indian city (e.g. Delhi, Lucknow, Patna)..."
+          className="w-full pl-10 pr-3 py-2.5 text-sm bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-600 focus:bg-white"
+        />
+      </div>
+      <button
+        type="submit"
+        className="px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold transition"
+      >
+        Check Live Air
+      </button>
+      <button
+        type="button"
+        onClick={onUseGeolocation}
+        className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-slate-800 text-sm font-semibold transition"
+      >
+        <Navigation className="w-4 h-4" />
+        <span>Use my location</span>
+      </button>
+    </form>
+  );
+}
+
+function QuickCityRow({ onFetchCity }: { onFetchCity: (city: string) => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs font-semibold text-slate-600 mr-1">Quick cities:</span>
+      {QUICK_CITIES.map((city) => (
+        <button
+          key={city}
+          type="button"
+          onClick={() => onFetchCity(city)}
+          className="px-3 py-1 rounded-full text-xs font-semibold bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 transition"
+        >
+          {city}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export function LandingEmptyState({
   isLoading,
   error,
@@ -24,28 +179,9 @@ export function LandingEmptyState({
   onUseGeolocation,
   onManualPm25,
 }: LandingEmptyStateProps) {
-  const [query, setQuery] = useState('');
   const [showManual, setShowManual] = useState(false);
-  const [manualPm, setManualPm] = useState('180');
 
-  if (isLoading) {
-    return (
-      <section
-        aria-busy="true"
-        aria-label="Loading live air quality"
-        className="bg-white rounded-2xl border border-stone-200 p-6 space-y-4 animate-pulse"
-      >
-        <div className="h-6 w-56 bg-stone-200 rounded-lg" />
-        <div className="h-24 bg-stone-100 rounded-xl" />
-        <div className="grid grid-cols-4 gap-3">
-          <div className="h-14 bg-stone-100 rounded-xl" />
-          <div className="h-14 bg-stone-100 rounded-xl" />
-          <div className="h-14 bg-stone-100 rounded-xl" />
-          <div className="h-14 bg-stone-100 rounded-xl" />
-        </div>
-      </section>
-    );
-  }
+  if (isLoading) return <LoadingSkeleton />;
 
   return (
     <section
@@ -61,85 +197,19 @@ export function LandingEmptyState({
           data, or use your approximate location.
         </p>
       </div>
-
       {error && (
-        <div
-          role="alert"
-          className="rounded-xl bg-amber-50 border border-amber-200 p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-900"
-        >
-          <span className="flex items-center gap-2 font-medium">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            {error}
-          </span>
-          <div className="flex items-center gap-2">
-            {lastCityQuery && (
-              <button
-                type="button"
-                onClick={() => onFetchCity(lastCityQuery)}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-amber-700 text-white font-semibold"
-              >
-                <RefreshCw className="w-3.5 h-3.5" /> Retry
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setShowManual(true)}
-              className="px-3 py-1.5 rounded-lg bg-white border border-amber-300 font-semibold text-amber-900"
-            >
-              Enter AQI manually
-            </button>
-          </div>
-        </div>
+        <ErrorAlert
+          error={error}
+          lastCityQuery={lastCityQuery}
+          onRetry={(c) => void onFetchCity(c)}
+          onOpenManual={() => setShowManual(true)}
+        />
       )}
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (query.trim()) void onFetchCity(query.trim());
-        }}
-        className="flex flex-col sm:flex-row gap-2.5"
-      >
-        <div className="relative flex-1">
-          <MapPin className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            aria-label="Search city"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search Indian city (e.g. Delhi, Lucknow, Patna)..."
-            className="w-full pl-10 pr-3 py-2.5 text-sm bg-stone-50 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-600 focus:bg-white"
-          />
-        </div>
-        <button
-          type="submit"
-          className="px-5 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-sm font-semibold transition"
-        >
-          Check Live Air
-        </button>
-        <button
-          type="button"
-          onClick={() => void onUseGeolocation()}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-slate-800 text-sm font-semibold transition"
-        >
-          <Navigation className="w-4 h-4" />
-          <span>Use my location</span>
-        </button>
-      </form>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold text-slate-500 mr-1">Quick cities:</span>
-        {QUICK_CITIES.map((city) => (
-          <button
-            key={city}
-            type="button"
-            onClick={() => void onFetchCity(city)}
-            className="px-3 py-1 rounded-full text-xs font-semibold bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 transition"
-          >
-            {city}
-          </button>
-        ))}
-      </div>
-
+      <CitySearchBar
+        onSubmit={(c) => void onFetchCity(c)}
+        onUseGeolocation={() => void onUseGeolocation()}
+      />
+      <QuickCityRow onFetchCity={(c) => void onFetchCity(c)} />
       <div className="pt-2 border-t border-stone-100 flex flex-wrap items-center gap-4 text-xs">
         <button
           type="button"
@@ -149,36 +219,7 @@ export function LandingEmptyState({
           <Edit3 className="w-3.5 h-3.5" /> Enter AQI manually
         </button>
       </div>
-
-      {showManual && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const val = Number(manualPm);
-            if (Number.isFinite(val) && val > 0) onManualPm25(val);
-          }}
-          className="flex flex-wrap items-center gap-2 bg-stone-50 p-3 rounded-xl border border-stone-200"
-        >
-          <label htmlFor="manual-pm25" className="text-xs font-semibold text-slate-700">
-            PM2.5 (µg/m³):
-          </label>
-          <input
-            id="manual-pm25"
-            type="number"
-            min={1}
-            max={1000}
-            value={manualPm}
-            onChange={(e) => setManualPm(e.target.value)}
-            className="w-28 px-2.5 py-1.5 text-xs bg-white border border-stone-300 rounded-lg"
-          />
-          <button
-            type="submit"
-            className="px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold"
-          >
-            Apply Manual Reading
-          </button>
-        </form>
-      )}
+      {showManual && <ManualPmForm onManualPm25={onManualPm25} />}
     </section>
   );
 }

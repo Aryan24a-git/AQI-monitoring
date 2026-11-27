@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { logger } from '../../lib/logger';
+import { logger } from '../logging/logger';
 import { LruCache, RequestCoalescer } from '../cache/lru';
 import {
   CircuitBreaker,
@@ -55,7 +55,7 @@ export async function searchOpenMeteo(
   const key = clean.toLowerCase();
   const cached = CACHE.get(key);
   if (cached) {
-    logger.info('cacheHit', { counter: 'cacheHit', provider: 'geocoding' });
+    logger.info({ counter: 'cacheHit', provider: 'geocoding' }, 'cacheHit');
     return cached;
   }
   return CALLS.get(key, () =>
@@ -87,7 +87,7 @@ export async function searchOpenMeteo(
         CACHE.set(key, results);
         return results;
       } catch (error) {
-        logger.warn('providerFailure', { counter: 'providerFailure', provider: 'geocoding' });
+        logger.warn({ counter: 'providerFailure', provider: 'geocoding' }, 'providerFailure');
         throw error instanceof ProviderError
           ? error
           : new ProviderError('NETWORK_ERROR', 'Geocoding provider failed', error);
@@ -96,7 +96,7 @@ export async function searchOpenMeteo(
   );
 }
 
-export class OpenMeteoGeocodingProvider implements GeocodingProvider {
+class OpenMeteoGeocodingProvider implements GeocodingProvider {
   constructor(private readonly fetchImpl: typeof fetch = fetch) {}
 
   search(query: string): Promise<readonly GeocodingResult[]> {

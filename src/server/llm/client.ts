@@ -1,5 +1,5 @@
 import { DEFAULT_GROQ_MODEL, getEnv } from '../config/env';
-import { logger } from '../../lib/logger';
+import { logger } from '../logging/logger';
 
 export interface LlmRequest {
   system: string;
@@ -50,7 +50,7 @@ export function handleGroqModelError(status: number, model: string, bodyText = '
   modelUnavailable = true;
   if (!modelNotFoundLogged) {
     modelNotFoundLogged = true;
-    logger.error('llmModelNotFound', { model, status, fallback: 'basic_mode' });
+    logger.error({ model, status, fallback: 'basic_mode' }, 'llmModelNotFound');
   }
   return true;
 }
@@ -116,15 +116,18 @@ export class GroqClient implements LlmClient {
           cachedReadyProbe = { ok: false, checkedAt: Date.now() };
         }
         if (!retryable || attempt === 1) {
-          logger.warn('llmRequestFailed', { fallbackReason: `HTTP_${res.status}` });
+          logger.warn({ fallbackReason: `HTTP_${res.status}` }, 'llmRequestFailed');
           return null;
         }
         await new Promise((resolve) => setTimeout(resolve, 150 + Math.random() * 100));
       } catch (error) {
         if (attempt === 1) {
-          logger.warn('llmRequestFailed', {
-            fallbackReason: error instanceof Error ? error.name : 'unknown',
-          });
+          logger.warn(
+            {
+              fallbackReason: error instanceof Error ? error.name : 'unknown',
+            },
+            'llmRequestFailed'
+          );
           return null;
         }
       } finally {

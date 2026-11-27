@@ -7,21 +7,85 @@ import { useAiConsent } from '@/features/copilot/useAiConsent';
 import type { useVayuSaathi } from './useVayuSaathi';
 
 type VayuState = ReturnType<typeof useVayuSaathi>;
+type ToastFn = ReturnType<typeof useToast>['showToast'];
+
+async function postPlaybookAi(state: VayuState, showToast: ToastFn) {
+  if (!state.location || !state.impact) return;
+  state.setIsGeneratingAI(true);
+  try {
+    const res = await fetch('/api/playbook', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        location: state.location,
+        profile: state.profile,
+        vent: state.vent,
+        impact: state.impact,
+        aiConsent: true,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const src: 'ai' | 'basic' = data.source === 'ai' ? 'ai' : 'basic';
+      state.setAiPlaybook(data.playbook);
+      state.setPlaybookSource(src);
+      showToast(
+        src === 'ai' ? 'Fresh AI Playbook synthesized!' : 'Generated playbook in Basic mode.',
+        src === 'ai' ? 'success' : 'info'
+      );
+      return;
+    }
+  } catch {
+    // fallback below
+  } finally {
+    state.setIsGeneratingAI(false);
+  }
+  state.setPlaybookSource('basic');
+  showToast('Generated playbook from local rules engine.', 'info');
+}
+
+async function postAskAi(text: string, state: VayuState) {
+  if (!state.location || !state.impact) return;
+  state.setChatMessages((prev) => [...prev, { role: 'user', text }]);
+  state.setIsChatLoading(true);
+  try {
+    const res = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        question: text,
+        aqi: state.impact.aqi.naqi,
+        pm25: state.location.pm25,
+        aiConsent: true,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const full = data.disclaimer ? `${data.answer}\n\n*${data.disclaimer}*` : data.answer;
+      const src: 'ai' | 'basic' = data.source === 'ai' && !data.fallback ? 'ai' : 'basic';
+      state.setChatMessages((prev) => [...prev, { role: 'assistant', text: full, source: src }]);
+      return;
+    }
+  } catch {
+    // fallback below
+  } finally {
+    state.setIsChatLoading(false);
+  }
+  const reply = getChatFallbackReply(text, state.location, state.impact, state.vent);
+  state.setChatMessages((prev) => [...prev, { role: 'assistant', text: reply, source: 'basic' }]);
+}
 
 export function useAppActions(state: VayuState) {
   const { showToast } = useToast();
   const { aiConsent, pendingAction, setPendingAction, saveConsent } = useAiConsent();
 
   const handleUseGeolocation = async () => {
-    if (!navigator.geolocation) {
-      showToast('Geolocation not supported in this browser.', 'warning');
-      return;
-    }
+    if (!navigator.geolocation)
+      return showToast('Geolocation not supported in this browser.', 'warning');
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
-          const loc = await fetchLiveByCoords(pos.coords.latitude, pos.coords.longitude);
-          state.setLocation(loc);
+          state.setLocation(await fetchLiveByCoords(pos.coords.latitude, pos.coords.longitude));
           state.setPlaybookSource('basic');
           state.setAiPlaybook(null);
           showToast('Loaded live air quality for your approximate area.', 'success');
@@ -40,57 +104,20 @@ export function useAppActions(state: VayuState) {
     showToast(`Applied manual PM2.5 reading (${pm25} µg/m³).`, 'info');
   };
 
-  const runGenerateAI = async () => {
-    if (!state.location || !state.impact) return;
-    state.setIsGeneratingAI(true);
-    try {
-      const res = await fetch('/api/playbook', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          location: state.location,
-          profile: state.profile,
-          vent: state.vent,
-          impact: state.impact,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const src: 'ai' | 'basic' = data.source === 'ai' ? 'ai' : 'basic';
-        state.setAiPlaybook(data.playbook);
-        state.setPlaybookSource(src);
-        showToast(
-          src === 'ai' ? 'Fresh AI Playbook synthesized!' : 'Generated playbook in Basic mode.',
-          src === 'ai' ? 'success' : 'info'
-        );
-      } else {
-        state.setPlaybookSource('basic');
-        showToast('Generated playbook from local rules engine.', 'info');
-      }
-    } catch {
-      state.setPlaybookSource('basic');
-      showToast('Generated playbook from local rules engine.', 'info');
-    } finally {
-      state.setIsGeneratingAI(false);
-    }
-  };
-
   const handleGenerateAI = async () => {
     if (!state.location || !state.impact) return;
     if (aiConsent === null) return setPendingAction({ type: 'playbook' });
     if (aiConsent === 'basic') {
       state.setAiPlaybook(null);
       state.setPlaybookSource('basic');
-      showToast('Generated playbook in Basic mode (local rules).', 'info');
-      return;
+      return showToast('Generated playbook in Basic mode (local rules).', 'info');
     }
-    await runGenerateAI();
+    await postPlaybookAi(state, showToast);
   };
 
-  const runSendMessage = async (text: string, consentOverride?: 'allow' | 'basic') => {
+  const runSendMessage = async (text: string, override?: 'allow' | 'basic') => {
     if (!state.location || !state.impact) return;
-    const effective = consentOverride ?? aiConsent;
-    if (effective === 'basic') {
+    if ((override ?? aiConsent) === 'basic') {
       const reply = getChatFallbackReply(text, state.location, state.impact, state.vent);
       state.setChatMessages((prev) => [
         ...prev,
@@ -99,39 +126,7 @@ export function useAppActions(state: VayuState) {
       ]);
       return;
     }
-    state.setChatMessages((prev) => [...prev, { role: 'user', text }]);
-    state.setIsChatLoading(true);
-    try {
-      const res = await fetch('/api/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          question: text,
-          aqi: state.impact.aqi.naqi,
-          pm25: state.location.pm25,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const full = data.disclaimer ? `${data.answer}\n\n*${data.disclaimer}*` : data.answer;
-        const src: 'ai' | 'basic' = data.source === 'ai' && !data.fallback ? 'ai' : 'basic';
-        state.setChatMessages((prev) => [...prev, { role: 'assistant', text: full, source: src }]);
-      } else {
-        const reply = getChatFallbackReply(text, state.location, state.impact, state.vent);
-        state.setChatMessages((prev) => [
-          ...prev,
-          { role: 'assistant', text: reply, source: 'basic' },
-        ]);
-      }
-    } catch {
-      const reply = getChatFallbackReply(text, state.location, state.impact, state.vent);
-      state.setChatMessages((prev) => [
-        ...prev,
-        { role: 'assistant', text: reply, source: 'basic' },
-      ]);
-    } finally {
-      state.setIsChatLoading(false);
-    }
+    await postAskAi(text, state);
   };
 
   const handleSendMessage = async (text: string) => {
@@ -146,7 +141,7 @@ export function useAppActions(state: VayuState) {
     setPendingAction(null);
     if (!action) return;
     if (action.type === 'playbook') {
-      if (choice === 'allow') await runGenerateAI();
+      if (choice === 'allow') await postPlaybookAi(state, showToast);
       else {
         state.setAiPlaybook(null);
         state.setPlaybookSource('basic');

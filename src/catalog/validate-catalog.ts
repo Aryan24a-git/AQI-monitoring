@@ -35,19 +35,19 @@ function validateCatalog(): void {
   // Verify all actions with d3Check=true don't recommend harmful actions
   // (They should be conditional — this is a documentation/review check)
   const d3Actions = actions.filter((a) => a.d3Check);
-  console.log(
+  console.info(
     `ℹ️  ${d3Actions.length} actions flagged for D3 (do-no-harm) review:`,
     d3Actions.map((a) => a.id)
   );
 
   // Verify all red-flag triggers
   const redFlags = actions.filter((a) => a.redFlagTrigger);
-  console.log(
+  console.info(
     `ℹ️  ${redFlags.length} red-flag trigger actions:`,
     redFlags.map((a) => a.id)
   );
 
-  console.log(`✅ Catalog valid: ${actions.length} actions, all with sourced impact evidence`);
+  console.info(`✅ Catalog valid: ${actions.length} actions, all with sourced impact evidence`);
 }
 
 validateCatalog();

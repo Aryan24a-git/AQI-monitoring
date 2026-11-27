@@ -60,7 +60,7 @@ export const CatalogSchema = z.object({
 });
 
 export type Action = z.infer<typeof ActionSchema>;
-export type Catalog = z.infer<typeof CatalogSchema>;
+type Catalog = z.infer<typeof CatalogSchema>;
 export type Impact = z.infer<typeof ImpactSchema>;
 export type Confidence = z.infer<typeof ConfidenceSchema>;
 export type BenefitType = z.infer<typeof BenefitTypeSchema>;

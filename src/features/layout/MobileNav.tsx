@@ -8,6 +8,16 @@ interface MobileNavProps {
   onTabChange: (tab: 'playbook' | 'copilot' | 'community') => void;
 }
 
+const TABS: Array<{
+  id: 'playbook' | 'copilot' | 'community';
+  label: string;
+  Icon: typeof ShieldCheck;
+}> = [
+  { id: 'playbook', label: 'Playbook', Icon: ShieldCheck },
+  { id: 'copilot', label: 'Ask AI', Icon: Sparkles },
+  { id: 'community', label: 'Community', Icon: Users },
+];
+
 export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
   return (
     <nav
@@ -15,50 +25,19 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
       aria-label="Mobile Navigation"
     >
       <div className="grid grid-cols-3 gap-1" role="tablist" aria-label="Mobile Navigation Tabs">
-        <button
-          type="button"
-          onClick={() => onTabChange('playbook')}
-          role="tab"
-          aria-selected={activeTab === 'playbook'}
-          className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[11px] font-semibold transition ${
-            activeTab === 'playbook'
-              ? 'bg-teal-50 text-teal-800'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <ShieldCheck className="w-5 h-5 mb-0.5" />
-          <span>Playbook</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onTabChange('copilot')}
-          role="tab"
-          aria-selected={activeTab === 'copilot'}
-          className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[11px] font-semibold transition ${
-            activeTab === 'copilot'
-              ? 'bg-teal-50 text-teal-800'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Sparkles className="w-5 h-5 mb-0.5" />
-          <span>Ask AI</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onTabChange('community')}
-          role="tab"
-          aria-selected={activeTab === 'community'}
-          className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[11px] font-semibold transition ${
-            activeTab === 'community'
-              ? 'bg-teal-50 text-teal-800'
-              : 'text-slate-500 hover:text-slate-800'
-          }`}
-        >
-          <Users className="w-5 h-5 mb-0.5" />
-          <span>Community</span>
-        </button>
+        {TABS.map(({ id, label, Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onTabChange(id)}
+            role="tab"
+            aria-selected={activeTab === id}
+            className={`flex flex-col items-center justify-center py-2 px-1 rounded-xl text-[11px] font-semibold transition ${activeTab === id ? 'bg-teal-50 text-teal-800' : 'text-slate-600 hover:text-slate-900'}`}
+          >
+            <Icon className="w-5 h-5 mb-0.5" />
+            <span>{label}</span>
+          </button>
+        ))}
       </div>
     </nav>
   );

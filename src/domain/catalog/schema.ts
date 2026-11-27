@@ -14,7 +14,7 @@ export const CatalogSectionEnum = z.enum(['today', 'indoors', 'alternatives']);
 export type CatalogSection = z.infer<typeof CatalogSectionEnum>;
 
 export const CostTierEnum = z.enum(['free', 'low', 'medium', 'high']);
-export type CostTier = z.infer<typeof CostTierEnum>;
+type CostTier = z.infer<typeof CostTierEnum>;
 
 export const ConfidenceEnum = z.enum(['high', 'medium', 'low']);
 export type Confidence = z.infer<typeof ConfidenceEnum>;
@@ -70,7 +70,7 @@ export const PredicateSchema = z.object({
   maxCostTier: CostTierEnum.optional(),
   hasPurifier: z.boolean().optional(),
 });
-export type ActionPredicate = z.infer<typeof PredicateSchema>;
+type ActionPredicate = z.infer<typeof PredicateSchema>;
 
 export const ActionEntrySchema = z.object({
   id: z.string().regex(/^ACT-\d{3}$/, 'Action ID must be in format ACT-XXX'),

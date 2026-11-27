@@ -7,13 +7,13 @@ import { COORD_DECIMAL_PLACES, MIN_PROFILE_MEMBERS, MAX_PROFILE_MEMBERS } from '
 // ─── Enums (Strict, no free-text) ─────────────────────────────────────────────
 
 export const AgeBandEnum = z.enum(['under5', 'child5to12', 'teen', 'adult', 'senior65plus']);
-export type AgeBand = z.infer<typeof AgeBandEnum>;
+type AgeBand = z.infer<typeof AgeBandEnum>;
 
 export const SensitivityEnum = z.enum(['asthma', 'copd', 'heart', 'pregnancy', 'other']);
-export type Sensitivity = z.infer<typeof SensitivityEnum>;
+type Sensitivity = z.infer<typeof SensitivityEnum>;
 
 export const HousingSealingEnum = z.enum(['leaky', 'average', 'tight']);
-export type HousingSealing = z.infer<typeof HousingSealingEnum>;
+type HousingSealing = z.infer<typeof HousingSealingEnum>;
 
 export const CookingFuelEnum = z.enum([
   'lpg',
@@ -24,10 +24,10 @@ export const CookingFuelEnum = z.enum([
   'kerosene',
   'other',
 ]);
-export type CookingFuel = z.infer<typeof CookingFuelEnum>;
+type CookingFuel = z.infer<typeof CookingFuelEnum>;
 
 export const HeatingEnum = z.enum(['none', 'electric', 'gas', 'biomass', 'other']);
-export type Heating = z.infer<typeof HeatingEnum>;
+type Heating = z.infer<typeof HeatingEnum>;
 
 export const CommuteModeEnum = z.enum([
   'walk',
@@ -41,10 +41,10 @@ export const CommuteModeEnum = z.enum([
   'wfh',
   'auto_rickshaw',
 ]);
-export type CommuteMode = z.infer<typeof CommuteModeEnum>;
+type CommuteMode = z.infer<typeof CommuteModeEnum>;
 
 export const BudgetEnum = z.enum(['free', 'low', 'medium', 'flexible']);
-export type Budget = z.infer<typeof BudgetEnum>;
+type Budget = z.infer<typeof BudgetEnum>;
 
 // ─── Household Member & Profile ───────────────────────────────────────────────
 
@@ -52,7 +52,7 @@ export const MemberSchema = z.object({
   ageBand: AgeBandEnum,
   sensitivities: z.array(SensitivityEnum).max(5),
 });
-export type Member = z.infer<typeof MemberSchema>;
+type Member = z.infer<typeof MemberSchema>;
 
 export const CURRENT_PROFILE_SCHEMA_VERSION = 1;
 
@@ -115,7 +115,7 @@ export const PlanSchema = z.object({
   generatedAt: z.string().datetime(),
   isFallback: z.boolean(),
 });
-export type Plan = z.infer<typeof PlanSchema>;
+type Plan = z.infer<typeof PlanSchema>;
 
 export const ApiErrorSchema = z.object({
   code: z.string().min(1),

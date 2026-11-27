@@ -6,7 +6,7 @@ import type { AqiBand } from '../../domain/aqi-bands';
 import { assemblePlan } from '../../domain/rules-engine';
 import catalogData from '../../catalog/catalog.json';
 import type { Action } from '../../catalog/catalog.schema';
-import { logger } from '../../lib/logger';
+import { logger } from '../logging/logger';
 import { narrate } from './narrate';
 import { buildBasicPlan } from '../../domain/plan';
 import type { AirQualitySnapshot } from '../../domain/types';
@@ -68,16 +68,22 @@ export async function generatePersonalizedPlan(
       keyAdvice = result.narrative.itemNotes.map((note) => `${note.id}: ${note.tip}`).join(' ');
       isFallback = false;
     } else {
-      logger.warn('LLM planning failed, using deterministic fallback', {
-        counter: 'fallbackRate',
-        fallbackReason: result.fallbackReason,
-      });
+      logger.warn(
+        {
+          counter: 'fallbackRate',
+          fallbackReason: result.fallbackReason,
+        },
+        'LLM planning failed, using deterministic fallback'
+      );
     }
   } catch (err) {
-    logger.warn('LLM planning failed, using deterministic fallback', {
-      counter: 'fallbackRate',
-      err: String(err),
-    });
+    logger.warn(
+      {
+        counter: 'fallbackRate',
+        err: String(err),
+      },
+      'LLM planning failed, using deterministic fallback'
+    );
   }
 
   return {

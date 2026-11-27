@@ -15,12 +15,7 @@ import { getEnv } from '@/server/config/env';
 import { fetchWaqiStation, validateWaqiReading } from '@/server/providers/waqiAirQuality';
 import { buildCombinedScenario, buildWaqiScenario, type MeteoPayload } from './cityScenarioBuilder';
 
-export {
-  buildCombinedScenario,
-  extractHourlySeries,
-  formatObservationTime,
-  type HourlySeriesResult,
-} from './cityScenarioBuilder';
+export { buildCombinedScenario, extractHourlySeries } from './cityScenarioBuilder';
 
 const limiter = new TokenBucketLimiter(
   RATE_LIMITS.cityScenarioPerMinute,

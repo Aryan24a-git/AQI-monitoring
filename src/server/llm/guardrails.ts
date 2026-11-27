@@ -106,4 +106,4 @@ export const PlanOutputSchema = z.object({
   keyAdvice: z.string().max(300),
 });
 
-export type PlanOutput = z.infer<typeof PlanOutputSchema>;
+type PlanOutput = z.infer<typeof PlanOutputSchema>;

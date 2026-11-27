@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { findBandByPm25 } from '../../domain/bands';
 import type { AirQualitySnapshot } from '../../domain/types';
-import { logger } from '../../lib/logger';
+import { logger } from '../logging/logger';
 import { LruCache, RequestCoalescer } from '../cache/lru';
 import {
   CircuitBreaker,
@@ -43,11 +43,11 @@ export function clearAirQualityCaches(): void {
   BREAKER.reset();
 }
 
-export function airQualityCacheSize(): number {
+function airQualityCacheSize(): number {
   return AQI_CACHE.size;
 }
 
-export function coalescedCallsInFlight(): number {
+function coalescedCallsInFlight(): number {
   return AQI_CALLS.size;
 }
 
@@ -104,7 +104,7 @@ async function loadSnapshot(
     if (!response.ok) throw new ProviderError('HTTP_ERROR', `Upstream returned ${response.status}`);
     return parseSnapshot(await readJson(response));
   } catch (error) {
-    logger.warn('providerFailure', { counter: 'providerFailure', provider: 'air-quality' });
+    logger.warn({ counter: 'providerFailure', provider: 'air-quality' }, 'providerFailure');
     throw error instanceof ProviderError
       ? error
       : new ProviderError('NETWORK_ERROR', 'Air quality provider failed', error);
@@ -128,7 +128,7 @@ export async function fetchOpenMeteoSnapshot(
   const key = `${rounded.lat},${rounded.lon}`;
   const cached = AQI_CACHE.get(key);
   if (cached) {
-    logger.info('cacheHit', { counter: 'cacheHit', provider: 'air-quality' });
+    logger.info({ counter: 'cacheHit', provider: 'air-quality' }, 'cacheHit');
     return cached;
   }
   return AQI_CALLS.get(key, () =>
@@ -176,17 +176,20 @@ export async function fetchOpenMeteoForecast(
       aqi: parsed.data.hourly.us_aqi[index] ?? 0,
     }));
   } catch (error) {
-    logger.warn('providerFailure', {
-      counter: 'providerFailure',
-      provider: 'air-quality-forecast',
-    });
+    logger.warn(
+      {
+        counter: 'providerFailure',
+        provider: 'air-quality-forecast',
+      },
+      'providerFailure'
+    );
     throw error instanceof ProviderError
       ? error
       : new ProviderError('NETWORK_ERROR', 'Air quality forecast failed', error);
   }
 }
 
-export class OpenMeteoAirQualityProvider implements AirQualityProvider {
+class OpenMeteoAirQualityProvider implements AirQualityProvider {
   constructor(private readonly fetchImpl: typeof fetch = fetch) {}
 
   fetchSnapshot(lat: number, lon: number): Promise<AirQualitySnapshot> {

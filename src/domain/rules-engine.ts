@@ -9,7 +9,7 @@ import type { Action } from '../catalog/catalog.schema';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type TimeOfDay = 'morning' | 'daytime' | 'evening' | 'night';
+type TimeOfDay = 'morning' | 'daytime' | 'evening' | 'night';
 
 export interface PlanAction {
   actionId: string;

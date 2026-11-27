@@ -8,8 +8,7 @@ import {
   type LocationScenario,
 } from '@/domain/scenarios';
 import { findSafeVentilationWindow } from '@/domain/naqi';
-import { buildDeterministicPlaybook } from '@/domain/playbookEngine';
-import { type PlaybookData } from '@/domain/playbookEngine';
+import { buildDeterministicPlaybook, type PlaybookData } from '@/domain/playbookEngine';
 import { INITIAL_HOTSPOTS, type HotspotReport } from '@/features/community/SmogPinboard';
 import type { ChatMessage } from '@/features/copilot/CopilotChat';
 import { fetchLiveIndianCity } from './fetchLiveCity';
@@ -33,6 +32,14 @@ function loadStorage<T>(key: string, fallback: T): T {
   }
 }
 
+function saveStorage(key: string, value: unknown): void {
+  try {
+    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
 function buildGreeting(loc: LocationScenario): ChatMessage {
   const { naqi, band } = computeDeterministicImpact(loc, DEFAULT_PROFILE).aqi;
   const hasHourly = !loc.hourlyError && loc.hourlyPM25.length >= 24 && loc.hourlyWind.length >= 24;
@@ -47,6 +54,59 @@ function buildGreeting(loc: LocationScenario): ChatMessage {
   };
 }
 
+function useCommunityActions() {
+  const [completedIds, setCompletedIds] = useState<string[]>([]);
+  const [hotspots, setHotspots] = useState<HotspotReport[]>(INITIAL_HOTSPOTS);
+  const [upvotedIds, setUpvotedIds] = useState<string[]>([]);
+
+  const togglePledge = (id: string) => {
+    const next = completedIds.includes(id)
+      ? completedIds.filter((x) => x !== id)
+      : [...completedIds, id];
+    setCompletedIds(next);
+    saveStorage(STORAGE.pledges, next);
+  };
+
+  const toggleUpvote = (id: string) => {
+    const isUp = upvotedIds.includes(id);
+    const nextUpvotes = isUp ? upvotedIds.filter((x) => x !== id) : [...upvotedIds, id];
+    setUpvotedIds(nextUpvotes);
+    setHotspots((prev) =>
+      prev.map((h) => (h.id === id ? { ...h, upvotes: isUp ? h.upvotes - 1 : h.upvotes + 1 } : h))
+    );
+    saveStorage(STORAGE.upvotes, nextUpvotes);
+  };
+
+  const addHotspot = (item: HotspotReport) => {
+    const next = [item, ...hotspots];
+    setHotspots(next);
+    setUpvotedIds((prev) => [...prev, item.id]);
+    saveStorage(STORAGE.hotspots, next);
+  };
+
+  const removeHotspot = (id: string) => {
+    const next = hotspots.filter((h) => h.id !== id);
+    const nextUpvotes = upvotedIds.filter((x) => x !== id);
+    setHotspots(next);
+    setUpvotedIds(nextUpvotes);
+    saveStorage(STORAGE.hotspots, next);
+    saveStorage(STORAGE.upvotes, nextUpvotes);
+  };
+
+  return {
+    completedIds,
+    setCompletedIds,
+    hotspots,
+    setHotspots,
+    upvotedIds,
+    setUpvotedIds,
+    togglePledge,
+    toggleUpvote,
+    addHotspot,
+    removeHotspot,
+  };
+}
+
 export function useVayuSaathi() {
   const { showToast } = useToast();
   const [selectedLocation, setSelectedLocation] = useState<LocationScenario | null>(null);
@@ -56,14 +116,12 @@ export function useVayuSaathi() {
   const [profile, setProfile] = useState<HouseholdProfile>(DEFAULT_PROFILE);
   const [activeTab, setActiveTab] = useState<'playbook' | 'copilot' | 'community'>('playbook');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [completedIds, setCompletedIds] = useState<string[]>([]);
-  const [hotspots, setHotspots] = useState<HotspotReport[]>(INITIAL_HOTSPOTS);
-  const [upvotedIds, setUpvotedIds] = useState<string[]>([]);
   const [playbookSource, setPlaybookSource] = useState<'ai' | 'basic'>('basic');
   const [aiPlaybook, setAiPlaybook] = useState<PlaybookData | null>(null);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isChatLoading, setIsChatLoading] = useState(false);
+  const community = useCommunityActions();
 
   const loadLiveCity = useCallback(async (cityQuery: string) => {
     setIsLoadingCity(true);
@@ -71,18 +129,12 @@ export function useVayuSaathi() {
     setLastCityQuery(cityQuery);
     try {
       const newLoc = await fetchLiveIndianCity(cityQuery);
-      if (!newLoc) {
-        setCityError(`Could not find "${cityQuery}". Try Delhi, Lucknow, or Patna.`);
-        return;
-      }
+      if (!newLoc)
+        return setCityError(`Could not find "${cityQuery}". Try Delhi, Lucknow, or Patna.`);
       setSelectedLocation(newLoc);
       setAiPlaybook(null);
       setPlaybookSource('basic');
-      try {
-        localStorage.setItem(STORAGE.lastCity, cityQuery);
-      } catch {
-        // ignore
-      }
+      saveStorage(STORAGE.lastCity, cityQuery);
     } catch {
       setCityError('Live air quality provider unavailable. Retry or enter AQI manually.');
     } finally {
@@ -93,18 +145,14 @@ export function useVayuSaathi() {
   useEffect(() => {
     queueMicrotask(() => {
       setProfile(loadStorage(STORAGE.profile, DEFAULT_PROFILE));
-      setCompletedIds(loadStorage(STORAGE.pledges, []));
-      setHotspots(loadStorage(STORAGE.hotspots, INITIAL_HOTSPOTS));
-      setUpvotedIds(loadStorage(STORAGE.upvotes, []));
-      try {
-        const savedCity = localStorage.getItem(STORAGE.lastCity);
-        if (savedCity && savedCity.trim().length >= 2) {
-          void loadLiveCity(savedCity);
-        }
-      } catch {
-        // ignore
-      }
+      community.setCompletedIds(loadStorage(STORAGE.pledges, []));
+      community.setHotspots(loadStorage(STORAGE.hotspots, INITIAL_HOTSPOTS));
+      community.setUpvotedIds(loadStorage(STORAGE.upvotes, []));
+      const savedCity =
+        typeof window !== 'undefined' ? localStorage.getItem(STORAGE.lastCity) : null;
+      if (savedCity && savedCity.trim().length >= 2) void loadLiveCity(savedCity);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadLiveCity]);
 
   const vent = useMemo(
@@ -121,94 +169,45 @@ export function useVayuSaathi() {
     () => (selectedLocation ? computeDeterministicImpact(selectedLocation, profile) : null),
     [selectedLocation, profile]
   );
-  const playbook = useMemo(() => {
-    if (!selectedLocation || !impact) return null;
-    return aiPlaybook || buildDeterministicPlaybook(selectedLocation, profile, vent, impact);
-  }, [aiPlaybook, selectedLocation, profile, vent, impact]);
-
-  const initGreeting = useCallback((loc: LocationScenario) => {
-    setChatMessages([buildGreeting(loc)]);
-  }, []);
-
-  const defaultMessages = useMemo<ChatMessage[]>(() => {
-    return selectedLocation ? [buildGreeting(selectedLocation)] : [];
-  }, [selectedLocation]);
+  const playbook = useMemo(
+    () =>
+      selectedLocation && impact
+        ? aiPlaybook || buildDeterministicPlaybook(selectedLocation, profile, vent, impact)
+        : null,
+    [aiPlaybook, selectedLocation, profile, vent, impact]
+  );
+  const initGreeting = useCallback(
+    (loc: LocationScenario) => setChatMessages([buildGreeting(loc)]),
+    []
+  );
+  const defaultMessages = useMemo<ChatMessage[]>(
+    () => (selectedLocation ? [buildGreeting(selectedLocation)] : []),
+    [selectedLocation]
+  );
 
   const handleSaveProfile = (newProfile: HouseholdProfile) => {
     setProfile(newProfile);
     setAiPlaybook(null);
     setPlaybookSource('basic');
-    try {
-      localStorage.setItem(STORAGE.profile, JSON.stringify(newProfile));
-    } catch {
-      // ignore
-    }
+    saveStorage(STORAGE.profile, newProfile);
     showToast('Household profile saved — recalculating impact!', 'success');
   };
 
-  const togglePledge = (id: string) => {
-    const next = completedIds.includes(id)
-      ? completedIds.filter((x) => x !== id)
-      : [...completedIds, id];
-    setCompletedIds(next);
-    try {
-      localStorage.setItem(STORAGE.pledges, JSON.stringify(next));
-    } catch {
-      // ignore
-    }
-  };
-
-  const toggleUpvote = (id: string) => {
-    const isUp = upvotedIds.includes(id);
-    const nextUpvotes = isUp ? upvotedIds.filter((x) => x !== id) : [...upvotedIds, id];
-    setUpvotedIds(nextUpvotes);
-    setHotspots((prev) =>
-      prev.map((h) => (h.id === id ? { ...h, upvotes: isUp ? h.upvotes - 1 : h.upvotes + 1 } : h))
-    );
-    try {
-      localStorage.setItem(STORAGE.upvotes, JSON.stringify(nextUpvotes));
-    } catch {
-      // ignore
-    }
-  };
-
-  const addHotspot = (item: HotspotReport) => {
-    const next = [item, ...hotspots];
-    setHotspots(next);
-    setUpvotedIds((prev) => [...prev, item.id]);
-    try {
-      localStorage.setItem(STORAGE.hotspots, JSON.stringify(next));
-    } catch {
-      // ignore
-    }
-  };
-
-  const removeHotspot = (id: string) => {
-    const next = hotspots.filter((h) => h.id !== id);
-    setHotspots(next);
-    const nextUpvotes = upvotedIds.filter((x) => x !== id);
-    setUpvotedIds(nextUpvotes);
-    try {
-      localStorage.setItem(STORAGE.hotspots, JSON.stringify(next));
-      localStorage.setItem(STORAGE.upvotes, JSON.stringify(nextUpvotes));
-    } catch {
-      // ignore
-    }
-  };
-
   const clearAllData = () => {
-    try {
-      Object.values(STORAGE).forEach((k) => localStorage.removeItem(k));
-    } catch {
-      // ignore
-    }
+    Object.values(STORAGE).forEach((k) => {
+      try {
+        localStorage.removeItem(k);
+      } catch {
+        /* ignore */
+      }
+    });
     setSelectedLocation(null);
     setCityError(null);
     setLastCityQuery(null);
     setProfile(DEFAULT_PROFILE);
-    setCompletedIds([]);
-    setHotspots(INITIAL_HOTSPOTS);
-    setUpvotedIds([]);
+    community.setCompletedIds([]);
+    community.setHotspots(INITIAL_HOTSPOTS);
+    community.setUpvotedIds([]);
     setAiPlaybook(null);
     setChatMessages([]);
     showToast('All browser data cleared.', 'info');
@@ -232,9 +231,9 @@ export function useVayuSaathi() {
     playbook,
     playbookSource,
     setPlaybookSource,
-    completedIds,
-    hotspots,
-    upvotedIds,
+    completedIds: community.completedIds,
+    hotspots: community.hotspots,
+    upvotedIds: community.upvotedIds,
     chatMessages: chatMessages.length > 0 ? chatMessages : defaultMessages,
     setChatMessages,
     isGeneratingAI,
@@ -242,10 +241,10 @@ export function useVayuSaathi() {
     isChatLoading,
     setIsChatLoading,
     handleSaveProfile,
-    togglePledge,
-    toggleUpvote,
-    addHotspot,
-    removeHotspot,
+    togglePledge: community.togglePledge,
+    toggleUpvote: community.toggleUpvote,
+    addHotspot: community.addHotspot,
+    removeHotspot: community.removeHotspot,
     initGreeting,
     setAiPlaybook,
     clearAllData,

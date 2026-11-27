@@ -10,6 +10,33 @@ interface ImpactExplainerProps {
   impact: CalculatedImpact;
 }
 
+function ImpactTiles({ impact }: { impact: CalculatedImpact }) {
+  return (
+    <div className="grid grid-cols-2 gap-2.5 mb-4">
+      <div className="rounded-xl bg-emerald-50/70 border border-emerald-200/80 p-3">
+        <div className="text-[11px] font-semibold text-emerald-900">
+          Indoor PM2.5 Drop (rough estimate)
+        </div>
+        <div className="font-extrabold text-2xl text-emerald-900 mt-0.5">
+          -{impact.maxExposureDropPct}%
+        </div>
+        <div className="text-[11px] text-emerald-800 mt-0.5">
+          ~{impact.maxCigsAvoided} cigs/day avoided
+        </div>
+      </div>
+      <div className="rounded-xl bg-sky-50/70 border border-sky-200/80 p-3">
+        <div className="text-[11px] font-semibold text-sky-900">
+          Outdoor Emissions Cut (rough estimate)
+        </div>
+        <div className="font-extrabold text-2xl text-sky-900 mt-0.5">{impact.totalCo2Kg} kg</div>
+        <div className="text-[11px] text-sky-800 mt-0.5">
+          CO₂ &amp; {impact.totalNoxG}g NOx avoided
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ImpactExplainer({ playbook, impact }: ImpactExplainerProps) {
   return (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between">
@@ -27,31 +54,7 @@ export function ImpactExplainer({ playbook, impact }: ImpactExplainerProps) {
             </p>
           </div>
         </div>
-
-        <div className="grid grid-cols-2 gap-2.5 mb-4">
-          <div className="rounded-xl bg-emerald-50/70 border border-emerald-200/80 p-3">
-            <div className="text-[11px] font-semibold text-emerald-900">
-              Indoor PM2.5 Drop (rough estimate)
-            </div>
-            <div className="font-extrabold text-2xl text-emerald-900 mt-0.5">
-              -{impact.maxExposureDropPct}%
-            </div>
-            <div className="text-[11px] text-emerald-800 mt-0.5">
-              ~{impact.maxCigsAvoided} cigs/day avoided
-            </div>
-          </div>
-          <div className="rounded-xl bg-sky-50/70 border border-sky-200/80 p-3">
-            <div className="text-[11px] font-semibold text-sky-900">
-              Outdoor Emissions Cut (rough estimate)
-            </div>
-            <div className="font-extrabold text-2xl text-sky-900 mt-0.5">
-              {impact.totalCo2Kg} kg
-            </div>
-            <div className="text-[11px] text-sky-800 mt-0.5">
-              CO₂ &amp; {impact.totalNoxG}g NOx avoided
-            </div>
-          </div>
-        </div>
+        <ImpactTiles impact={impact} />
 
         <details className="mb-3 rounded-xl bg-stone-50 border border-stone-200/80 px-3 py-2 text-[11px] text-slate-700">
           <summary className="font-semibold text-slate-900 cursor-pointer">

@@ -16,10 +16,42 @@ import { AiConsentModal } from '@/features/copilot/AiConsentModal';
 import { CommunityTab } from '@/features/community/CommunityTab';
 import { ProfileDrawer } from '@/features/profile/ProfileDrawer';
 
+function DemoBanner({ onClear }: { onClear: () => void }) {
+  return (
+    <div
+      role="status"
+      className="rounded-xl bg-amber-50 border border-amber-300 px-4 py-2.5 text-xs font-semibold text-amber-900 flex items-center justify-between gap-2"
+    >
+      <span>Demo scenario (synthetic data) — not live station telemetry.</span>
+      <button type="button" onClick={onClear} className="underline hover:text-amber-950">
+        Switch to live city
+      </button>
+    </div>
+  );
+}
+
+function DashboardTabs({ state, actions }: { state: ReturnType<typeof useVayuSaathi>; actions: ReturnType<typeof useAppActions> }) {
+  const loc = state.location!;
+  const impact = state.impact!;
+  return (
+    <>
+      <HeroSection location={loc} impact={impact} vent={state.vent} />
+      {state.activeTab === 'playbook' && (
+        <DailyPlaybookTab playbook={state.playbook!} impact={impact} completedIds={state.completedIds} playbookSource={state.playbookSource} isGeneratingAI={state.isGeneratingAI} onTogglePledge={state.togglePledge} onGenerateAI={actions.handleGenerateAI} />
+      )}
+      {state.activeTab === 'copilot' && (
+        <CopilotTab location={loc} profile={state.profile} vent={state.vent} messages={state.chatMessages} onSendMessage={actions.handleSendMessage} onResetChat={() => state.initGreeting(loc)} isLoading={state.isChatLoading} />
+      )}
+      {state.activeTab === 'community' && (
+        <CommunityTab location={loc} profile={state.profile} vent={state.vent} impact={impact} completedPledgesCount={state.completedIds.length} userCo2Kg={state.completedIds.length * 0.35} hotspots={state.hotspots} upvotedIds={state.upvotedIds} onAddHotspot={state.addHotspot} onToggleUpvote={state.toggleUpvote} onRemoveHotspot={state.removeHotspot} />
+      )}
+    </>
+  );
+}
+
 function VayuSaathiApp() {
   const state = useVayuSaathi();
   const actions = useAppActions(state);
-  const userCo2 = state.completedIds.length * 0.35;
   const ready = state.location && state.impact && state.playbook;
 
   return (
@@ -32,24 +64,8 @@ function VayuSaathiApp() {
         onOpenProfile={() => state.setIsProfileOpen(true)}
         onFetchLiveCity={state.loadLiveCity}
       />
-
       <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 space-y-6">
-        {state.location?.isSynthetic && (
-          <div
-            role="status"
-            className="rounded-xl bg-amber-50 border border-amber-300 px-4 py-2.5 text-xs font-semibold text-amber-900 flex items-center justify-between gap-2"
-          >
-            <span>Demo scenario (synthetic data) — not live station telemetry.</span>
-            <button
-              type="button"
-              onClick={state.clearAllData}
-              className="underline hover:text-amber-950"
-            >
-              Switch to live city
-            </button>
-          </div>
-        )}
-
+        {state.location?.isSynthetic && <DemoBanner onClear={state.clearAllData} />}
         {!ready || state.isLoadingCity ? (
           <LandingEmptyState
             isLoading={state.isLoadingCity}
@@ -60,55 +76,11 @@ function VayuSaathiApp() {
             onManualPm25={actions.handleManualPm25}
           />
         ) : (
-          <>
-            <HeroSection location={state.location!} impact={state.impact!} vent={state.vent} />
-
-            {state.activeTab === 'playbook' && (
-              <DailyPlaybookTab
-                playbook={state.playbook!}
-                impact={state.impact!}
-                completedIds={state.completedIds}
-                playbookSource={state.playbookSource}
-                isGeneratingAI={state.isGeneratingAI}
-                onTogglePledge={state.togglePledge}
-                onGenerateAI={actions.handleGenerateAI}
-              />
-            )}
-
-            {state.activeTab === 'copilot' && (
-              <CopilotTab
-                location={state.location!}
-                profile={state.profile}
-                vent={state.vent}
-                messages={state.chatMessages}
-                onSendMessage={actions.handleSendMessage}
-                onResetChat={() => state.initGreeting(state.location!)}
-                isLoading={state.isChatLoading}
-              />
-            )}
-
-            {state.activeTab === 'community' && (
-              <CommunityTab
-                location={state.location!}
-                profile={state.profile}
-                vent={state.vent}
-                impact={state.impact!}
-                completedPledgesCount={state.completedIds.length}
-                userCo2Kg={userCo2}
-                hotspots={state.hotspots}
-                upvotedIds={state.upvotedIds}
-                onAddHotspot={state.addHotspot}
-                onToggleUpvote={state.toggleUpvote}
-                onRemoveHotspot={state.removeHotspot}
-              />
-            )}
-          </>
+          <DashboardTabs state={state} actions={actions} />
         )}
       </main>
-
       <AppFooter />
       <MobileNav activeTab={state.activeTab} onTabChange={state.setActiveTab} />
-
       <ProfileDrawer
         isOpen={state.isProfileOpen}
         onClose={() => state.setIsProfileOpen(false)}
@@ -116,7 +88,6 @@ function VayuSaathiApp() {
         onSaveProfile={state.handleSaveProfile}
         onClearData={state.clearAllData}
       />
-
       {actions.pendingAction && (
         <AiConsentModal
           onAllow={() => void actions.handleConsentChoice('allow')}

@@ -4,7 +4,7 @@ import { createLlmClient, stripMarkdownCodeFences, type LlmClient } from './clie
 import { classifyQuestionScope, containsInjection } from './guardrails';
 import { QUESTION_SYSTEM_PROMPT } from './prompts';
 import { AnswerSchema } from './schema';
-import { logger } from '../../lib/logger';
+import { logger } from '../logging/logger';
 
 const TEMPLATES = {
   off_topic:
@@ -32,7 +32,7 @@ export async function ask(
 ): Promise<AskResult> {
   const scope = classifyQuestionScope(question);
   if (scope === 'off_topic' || containsInjection(question)) {
-    logger.warn('llmScopeRefusal', { fallbackReason: 'off_topic_or_injection' });
+    logger.warn({ fallbackReason: 'off_topic_or_injection' }, 'llmScopeRefusal');
     return refusal('off_topic_or_injection');
   }
   if (question.trim().length > 300) return refusal('question_too_long');
@@ -63,7 +63,7 @@ export async function ask(
     /\d/.test(result.data.answer) ||
     /https?:\/\/|www\.|<[^>]+>/.test(result.data.answer)
   ) {
-    logger.warn('llmFallback', { fallbackReason: 'answer_guardrail' });
+    logger.warn({ fallbackReason: 'answer_guardrail' }, 'llmFallback');
     return template(scope);
   }
   return {

@@ -23,7 +23,7 @@ export const HotspotCategorySchema = z.enum([
   'Uncovered Construction Dust',
   'Traffic Choke Point',
 ]);
-export type HotspotCategory = z.infer<typeof HotspotCategorySchema>;
+type HotspotCategory = z.infer<typeof HotspotCategorySchema>;
 
 export const LocalHotspotSchema = z.object({
   id: z.string().min(1),
@@ -34,7 +34,7 @@ export const LocalHotspotSchema = z.object({
   upvotes: z.number().int().min(0),
   createdAt: z.string().datetime().optional(),
 });
-export type LocalHotspot = z.infer<typeof LocalHotspotSchema>;
+type LocalHotspot = z.infer<typeof LocalHotspotSchema>;
 
 export interface ColonyProjection {
   families: number;

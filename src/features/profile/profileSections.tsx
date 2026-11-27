@@ -108,6 +108,44 @@ export function HomeAirSection({ draft, setDraft }: SectionProps) {
   );
 }
 
+function CommuteDistanceSlider({
+  commuteMode,
+  commuteKm,
+  onChange,
+}: {
+  commuteMode: CommuteMode;
+  commuteKm: number;
+  onChange: (km: number) => void;
+}) {
+  return (
+    <div
+      className={`bg-stone-50 border border-stone-200 rounded-xl p-3 transition ${
+        commuteMode === 'wfh' ? 'opacity-40 pointer-events-none' : ''
+      }`}
+    >
+      <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1.5">
+        <span>Daily Round-Trip Distance</span>
+        <span className="text-teal-800 font-bold">{commuteKm} km</span>
+      </div>
+      <input
+        type="range"
+        aria-label="Daily Round-Trip Distance in km"
+        min="4"
+        max="40"
+        step="2"
+        value={commuteKm}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full cursor-pointer accent-teal-700"
+      />
+      <div className="flex justify-between text-[10px] text-slate-600 mt-1">
+        <span>4 km</span>
+        <span>20 km</span>
+        <span>40 km</span>
+      </div>
+    </div>
+  );
+}
+
 export function CommuteSection({ draft, setDraft }: SectionProps) {
   return (
     <div className="space-y-3">
@@ -131,32 +169,11 @@ export function CommuteSection({ draft, setDraft }: SectionProps) {
           </button>
         ))}
       </div>
-
-      <div
-        className={`bg-stone-50 border border-stone-200 rounded-xl p-3 transition ${
-          draft.commuteMode === 'wfh' ? 'opacity-40 pointer-events-none' : ''
-        }`}
-      >
-        <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1.5">
-          <span>Daily Round-Trip Distance</span>
-          <span className="text-teal-800 font-bold">{draft.commuteKm} km</span>
-        </div>
-        <input
-          type="range"
-          aria-label="Daily Round-Trip Distance in km"
-          min="4"
-          max="40"
-          step="2"
-          value={draft.commuteKm}
-          onChange={(e) => setDraft((p) => ({ ...p, commuteKm: Number(e.target.value) }))}
-          className="w-full cursor-pointer accent-teal-700"
-        />
-        <div className="flex justify-between text-[10px] text-slate-600 mt-1">
-          <span>4 km</span>
-          <span>20 km</span>
-          <span>40 km</span>
-        </div>
-      </div>
+      <CommuteDistanceSlider
+        commuteMode={draft.commuteMode}
+        commuteKm={draft.commuteKm}
+        onChange={(km) => setDraft((p) => ({ ...p, commuteKm: km }))}
+      />
     </div>
   );
 }

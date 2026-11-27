@@ -3,6 +3,8 @@
 // Standard Citation: US EPA 40 CFR Part 58 PM2.5 National Ambient Air Quality
 // Standards (NAAQS) Breakpoints (EPA-HQ-OAR-2015-0072, updated 2024).
 
+import { CPCB_BANDS } from './naqi';
+
 export interface AqiBandDefinition {
   readonly ordinal: number; // 0 to 5
   readonly key: string;
@@ -21,16 +23,16 @@ export const AQI_BANDS: readonly AqiBandDefinition[] = [
   {
     ordinal: 0,
     key: 'good',
-    label: 'Good',
+    label: CPCB_BANDS[0]!.label,
     aqiMin: 0,
     aqiMax: 50,
     pm25Min: 0.0,
-    pm25Max: 9.0, // EPA 2024 annual standard revision (0.0 - 9.0)
+    pm25Max: 9.0,
   },
   {
     ordinal: 1,
     key: 'moderate',
-    label: 'Moderate',
+    label: CPCB_BANDS[1]!.label,
     aqiMin: 51,
     aqiMax: 100,
     pm25Min: 9.1,
@@ -39,7 +41,7 @@ export const AQI_BANDS: readonly AqiBandDefinition[] = [
   {
     ordinal: 2,
     key: 'usg',
-    label: 'Unhealthy for Sensitive Groups',
+    label: CPCB_BANDS[2]!.label,
     aqiMin: 101,
     aqiMax: 150,
     pm25Min: 35.5,
@@ -48,7 +50,7 @@ export const AQI_BANDS: readonly AqiBandDefinition[] = [
   {
     ordinal: 3,
     key: 'unhealthy',
-    label: 'Unhealthy',
+    label: CPCB_BANDS[3]!.label,
     aqiMin: 151,
     aqiMax: 200,
     pm25Min: 55.5,
@@ -57,7 +59,7 @@ export const AQI_BANDS: readonly AqiBandDefinition[] = [
   {
     ordinal: 4,
     key: 'very_unhealthy',
-    label: 'Very Unhealthy',
+    label: CPCB_BANDS[4]!.label,
     aqiMin: 201,
     aqiMax: 300,
     pm25Min: 125.5,
@@ -66,7 +68,7 @@ export const AQI_BANDS: readonly AqiBandDefinition[] = [
   {
     ordinal: 5,
     key: 'hazardous',
-    label: 'Hazardous',
+    label: CPCB_BANDS[5]!.label,
     aqiMin: 301,
     aqiMax: 999,
     pm25Min: 225.5,

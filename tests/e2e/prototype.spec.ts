@@ -9,6 +9,7 @@ declare global {
 
 test('full prototype click-through against live production server', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'desktop', 'Desktop Chromium only');
+  test.setTimeout(60_000);
 
   const consoleErrors: string[] = [];
   await page.addInitScript(() => {
@@ -30,7 +31,7 @@ test('full prototype click-through against live production server', async ({ pag
   // 1. Choose Delhi via quick button -> numeric NAQI + Open-Meteo source
   await page.getByRole('button', { name: 'Delhi', exact: true }).click();
   const hero = page.locator('section[aria-label="Live Air Quality and Ventilation Overview"]');
-  await expect(hero).toBeVisible({ timeout: 15_000 });
+  await expect(hero).toBeVisible({ timeout: 25_000 });
   await expect(hero).toContainText(/Open-Meteo|WAQI/i);
   await expect(hero).toContainText(/Model estimate \(Open-Meteo\)|Station reading \(WAQI\)/i);
   await expect(hero).toContainText(/CPCB NAQI\s*\d+/);

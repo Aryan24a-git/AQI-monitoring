@@ -78,10 +78,9 @@ test.describe('Journey A — Happy path', () => {
     await expect(page.locator("h1, [role='heading']").first()).toBeVisible();
   });
 
-  test('plan page loads without crash', async ({ page }) => {
-    await mockUpstreamApis(page);
-    await page.goto('/plan');
-    await expect(page).toHaveURL(/\/plan/);
+  test('privacy page loads without crash', async ({ page }) => {
+    await page.goto('/privacy');
+    await expect(page).toHaveURL(/\/privacy/);
   });
 
   test('axe: home at desktop — no critical/serious violations', async ({ page }) => {
@@ -106,10 +105,9 @@ test.describe('Journey A — Happy path', () => {
     expect(critical, JSON.stringify(critical, null, 2)).toEqual([]);
   });
 
-  test('axe: plan at mobile — no critical/serious violations', async ({ page }) => {
-    await mockUpstreamApis(page);
+  test('axe: privacy at mobile — no critical/serious violations', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/plan');
+    await page.goto('/privacy');
     const results = await new AxeBuilder({ page }).analyze();
     const critical = results.violations.filter(
       (v) => v.impact === 'critical' || v.impact === 'serious'
@@ -134,13 +132,12 @@ test.describe('Journey B — Provider failure → manual AQI fallback', () => {
     await expect(page.locator("h1, [role='heading']").first()).toBeVisible();
   });
 
-  test('plan page works in basic mode without live AQI', async ({ page }) => {
-    await page.route('**/api/air-quality*', (route: Route) =>
+  test('home works in basic mode without live AQI', async ({ page }) => {
+    await page.route('**/api/city-scenario*', (route: Route) =>
       route.fulfill({ status: 503, body: 'Service Unavailable' })
     );
-    await page.route('**/api/plan', (route: Route) => route.fulfill({ json: MOCK_PLAN }));
-    await page.goto('/plan');
-    await expect(page).toHaveURL(/\/plan/);
+    await page.goto('/');
+    await expect(page.getByRole('button', { name: /Enter AQI manually/i })).toBeVisible();
   });
 });
 

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-for (const route of ['/', '/plan', '/ask']) {
+for (const route of ['/', '/privacy']) {
   test(`axe smoke: ${route}`, async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 700 });
     await page.goto(route);
@@ -13,16 +13,11 @@ for (const route of ['/', '/plan', '/ask']) {
   });
 }
 
-test('plan reflows at 320px', async ({ page }) => {
+test('home reflows at 320px', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 700 });
-  await page.goto('/plan');
+  await page.goto('/');
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth
   );
   expect(overflow).toBe(false);
-});
-
-test('ask page has static fallback and live region', async ({ page }) => {
-  await page.goto('/ask?consent=off');
-  await expect(page.getByText(/Static catalog guidance/)).toBeVisible();
 });

@@ -86,7 +86,7 @@ export const PETROL_CO2_PER_LITRE: SourcedConstant<number> = {
   isEstimate: false,
 };
 
-export const PM25_PER_CIGARETTE: SourcedConstant<number> = {
+const PM25_PER_CIGARETTE: SourcedConstant<number> = {
   value: 22.0,
   sourceNote:
     'Berkeley Earth methodology (Muller & Rohde 2015): 22 µg/m³ PM2.5 equates to ~1 cigarette/day exposure',

@@ -1,4 +1,4 @@
-import { logger } from '../../lib/logger';
+import { logger } from '../logging/logger';
 
 export type ProviderErrorCode =
   'TIMEOUT' | 'HTTP_ERROR' | 'SCHEMA_ERROR' | 'NETWORK_ERROR' | 'CIRCUIT_OPEN';
@@ -101,7 +101,7 @@ export class CircuitBreaker {
 
   async execute<T>(operation: () => Promise<T>): Promise<T> {
     if (this.isOpen) {
-      logger.warn('breakerOpen', { counter: 'breakerOpen' });
+      logger.warn({ counter: 'breakerOpen' }, 'breakerOpen');
       throw new ProviderError('CIRCUIT_OPEN', 'Circuit breaker is open');
     }
     try {

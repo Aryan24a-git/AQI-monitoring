@@ -101,50 +101,58 @@ interface HotspotCardProps {
   onRemove: (id: string) => void;
 }
 
+function HotspotCardHeader({
+  item,
+  onRemove,
+}: {
+  item: HotspotReport;
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 mb-2">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span
+          className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${getCatStyle(item.category)}`}
+        >
+          {item.category}
+        </span>
+        {item.isSample && (
+          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+            Sample
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] text-slate-600 font-medium">{item.timeAgo}</span>
+        <button
+          type="button"
+          aria-label="Remove report"
+          onClick={() => onRemove(item.id)}
+          className="p-0.5 rounded-full text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function HotspotCard({ item, isUpvoted, onToggleUpvote, onRemove }: HotspotCardProps) {
   return (
     <article className="rounded-2xl border border-stone-200 bg-white p-4 flex flex-col justify-between gap-3 hover:border-stone-300 transition">
       <div>
-        <div className="flex items-center justify-between gap-2 mb-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span
-              className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${getCatStyle(item.category)}`}
-            >
-              {item.category}
-            </span>
-            {item.isSample && (
-              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                Sample
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-slate-600 font-medium">{item.timeAgo}</span>
-            <button
-              type="button"
-              aria-label="Remove report"
-              onClick={() => onRemove(item.id)}
-              className="p-0.5 rounded-full text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
+        <HotspotCardHeader item={item} onRemove={onRemove} />
         <h5 className="font-bold text-sm text-slate-900">{item.locality}</h5>
         <p className="text-xs text-slate-600 mt-1 leading-relaxed">{item.description}</p>
       </div>
       <div className="flex items-center justify-between pt-2 border-t border-stone-100">
-        <span className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
+        <span className="text-[11px] font-medium text-slate-600 flex items-center gap-1">
           <MapPin className="w-3 h-3 text-teal-700" /> {item.city}
         </span>
         <button
           type="button"
           onClick={() => onToggleUpvote(item.id)}
-          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
-            isUpvoted
-              ? 'bg-teal-700 text-white border-teal-700'
-              : 'bg-stone-50 hover:bg-teal-50 text-slate-700 hover:text-teal-800 border-stone-200'
-          }`}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${isUpvoted ? 'bg-teal-700 text-white border-teal-700' : 'bg-stone-50 hover:bg-teal-50 text-slate-700 hover:text-teal-800 border-stone-200'}`}
         >
           <ArrowBigUp className="w-3.5 h-3.5" />
           <span>{item.upvotes}</span>

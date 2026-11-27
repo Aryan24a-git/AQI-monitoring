@@ -7,7 +7,7 @@ import {
   isLlmModelUnavailable,
   resetLlmAvailabilityForTests,
 } from '../../src/server/llm/client';
-import { logger } from '../../src/lib/logger';
+import { logger } from '../../src/server/logging/logger';
 import { GET as readyGet } from '../../src/app/api/ready/route';
 
 describe('Groq model-not-found fallback & /api/ready health', () => {
