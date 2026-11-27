@@ -90,19 +90,19 @@ const PlaybookRequestSchema = z.object({
 });
 
 const AiPlaybookResponseSchema = z.object({
-  aiSummary: z.string().min(10).max(350).optional(),
+  aiSummary: z.string().min(10).max(600).optional(),
   explainer: z.object({
-    healthWhy: z.string().min(10).max(450),
-    emissionWhy: z.string().min(10).max(450),
-    vulnerabilityNote: z.string().min(10).max(450),
+    healthWhy: z.string().min(10).max(800),
+    emissionWhy: z.string().min(10).max(800),
+    vulnerabilityNote: z.string().min(10).max(800),
   }),
   customizedHacks: z
     .array(
       z.object({
         id: z.string(),
-        title: z.string().min(3).max(120),
-        detail: z.string().min(10).max(350),
-        tag: z.string().min(2).max(40),
+        title: z.string().min(3).max(160),
+        detail: z.string().min(10).max(500),
+        tag: z.string().min(2).max(60),
       })
     )
     .optional(),
@@ -141,8 +141,8 @@ async function enhancePlaybookWithAi(
     system:
       'Personalize the user daily smog playbook in supportive English/Hinglish-friendly tone. Customize the action item details and tags with practical advice tailored to their city air conditions, family vulnerabilities, and budget. Provide a 1-sentence aiSummary and the 3 explainer fields. Keep all numeric values unchanged, give zero medical diagnosis/prescriptions, and include no URLs or HTML. Return strictly JSON: {"aiSummary": string, "explainer": {"healthWhy", "emissionWhy", "vulnerabilityNote"}, "customizedHacks": [{"id", "title", "detail", "tag"}]}.',
     prompt: `<context>City: ${location.city}, PM2.5: ${location.pm25}, PM10: ${location.pm10}. Vulnerabilities: ${profile.vulnerabilities.join(', ')}. Budget: ${profile.budgetTier}. Commute: ${profile.commuteMode}.</context><actions>${JSON.stringify(actions)}</actions><explainer>${JSON.stringify(playbook.explainer)}</explainer>`,
-    maxTokens: 750,
-    timeoutMs: 12_000,
+    maxTokens: 1500,
+    timeoutMs: 15_000,
     jsonMode: true,
   });
   if (!raw) return 'basic';

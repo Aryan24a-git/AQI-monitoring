@@ -38,7 +38,7 @@ export function WhatsAppPreview({ bulletinText, lang, onCopy }: WhatsAppPreviewP
           href={`https://wa.me/?text=${encodeURIComponent(bulletinText)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#15803D] hover:bg-[#166534] text-white text-xs sm:text-sm font-semibold shadow-sm transition"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-green-700 hover:bg-green-800 text-white text-xs sm:text-sm font-semibold shadow-sm transition"
         >
           <ExternalLink className="w-4 h-4" />
           <span>Open in WhatsApp</span>

@@ -78,7 +78,7 @@ export class GroqClient implements LlmClient {
         { role: 'system', content: request.system },
         { role: 'user', content: request.prompt },
       ],
-      max_tokens: Math.min(Math.max(request.maxTokens, 400), 1000),
+      max_tokens: Math.min(Math.max(request.maxTokens, 400), 2000),
       temperature: 0.2,
       ...(request.jsonMode ? { response_format: { type: 'json_object' } } : {}),
     });
