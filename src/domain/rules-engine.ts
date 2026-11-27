@@ -6,6 +6,7 @@ import { getAllVulnerabilityFlags } from './profile';
 import type { AqiBand } from './aqi-bands';
 import { isEmergencyCondition, isHighRiskCondition } from './aqi-bands';
 import type { Action } from '../catalog/catalog.schema';
+import { isSafeAction } from './rules/safety';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -120,6 +121,7 @@ export function assemblePlan(
     if (!action.targetHousingTypes.includes(profile.housingType)) return false;
     if (!isAffordable(action, profile.budgetBand)) return false;
     if (isExcluded(action, profile)) return false;
+    if (!isSafeAction(action, profile, effectiveBand.aqiMin, escalationLevel)) return false;
 
     // Required vulnerability flags: only show if profile has them
     if (action.requiredVulnerabilityFlags.length > 0) {

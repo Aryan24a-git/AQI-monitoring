@@ -55,12 +55,15 @@ export function buildBasicPlan(
   const vulnerability = hasEarlyEscalationVulnerability(profile);
   const effectiveEscalation = Math.min(baseBand.escalationLevel + (vulnerability ? 1 : 0), 6);
   const effectiveBand = getBandByEscalationLevel(effectiveEscalation);
+  const isSafe = (action: Action) =>
+    isSafeAction(action, profile, snapshot.aqi, effectiveEscalation);
   const eligible = rankActions(
     catalog.filter(
       (action) =>
         isApplicable(action, profile, effectiveEscalation) &&
         isWithinBudget(action, profile) &&
-        isSafeAction(action, profile, snapshot.aqi, effectiveEscalation)
+        // Defer this action's AQI-specific removal until after caps to avoid adding lower-ranked suggestions.
+        (action.id === 'ACT-007' || isSafe(action))
     ),
     profile,
     snapshot.pm25
@@ -68,15 +71,15 @@ export function buildBasicPlan(
   const routine = capSection(
     eligible.filter((action) => action.category === 'routine'),
     5
-  );
+  ).filter(isSafe);
   const indoors = capSection(
     eligible.filter((action) => action.category === 'indoor'),
     4
-  );
+  ).filter(isSafe);
   const alternatives = capSection(
     eligible.filter((action) => action.category === 'alternative'),
     3
-  );
+  ).filter(isSafe);
   const sections = [routine, indoors, alternatives];
   const items = sections.flatMap((actions, sectionIndex) =>
     actions.map((action, index) =>

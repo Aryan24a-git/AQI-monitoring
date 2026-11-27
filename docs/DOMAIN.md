@@ -1,5 +1,7 @@
 # DOMAIN.md — Clear Air Companion Domain Rules
 
+> These rules document design intent. The current runtime behavior is implemented in `src/domain/`; verify current thresholds and safeguards there before treating any numeric value below as an operational promise.
+
 ## The Three Core Verbs (Alignment Anchor for EC-002)
 
 1. **Suggest** — low-emission daily routines, indoor air quality hacks, sustainable alternatives

@@ -33,6 +33,8 @@ describe('Rules Engine Domain', () => {
     const plan = assemblePlan(profile, band, 5, catalog);
     expect(plan.hasRedFlag).toBe(true);
     expect(plan.medicalDisclaimer).toContain('not medical advice');
+    expect(plan.candidateActions.map((action) => action.actionId)).not.toContain('ACT-026');
+    expect(plan.candidateActions.map((action) => action.actionId)).not.toContain('ACT-007');
   });
 
   it('filters out actions excluded by housing type or budget (D2, D3)', () => {

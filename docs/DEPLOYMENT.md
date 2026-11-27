@@ -1,13 +1,13 @@
 # docs/DEPLOYMENT.md — Clear Air Companion Deployment Guide
 > Version: 2.0.0 | Stage: V2-28 | Authority: DEP-001 to DEP-004
 
-This document defines the deployment architecture, container configuration, environment specifications, cloud deployment blueprints (Google Cloud Run & Render), verification steps, and zero-downtime release/rollback protocols.
+This document describes the local standalone build and container deployment shape. No hosted deployment is currently claimed; validate platform-specific settings before release.
 
 ---
 
 ## 1. Deployment Architecture
 
-Clear Air Companion is packaged as an Alpine Docker container running Next.js 14 standalone output on Node 20.
+Clear Air Companion is packaged as an Alpine Docker container running Next.js standalone output on Node 24.
 
 ```
                     ┌────────────────────────────┐
@@ -30,7 +30,7 @@ Clear Air Companion is packaged as an Alpine Docker container running Next.js 14
 ```
 
 ### Key Architectural Invariants
-1. **Unprivileged Execution**: Runs as non-root user `nextjs` (UID 1001, GID 1001).
+1. **Unprivileged Execution**: The Docker runner uses the non-root user `nextjs` (UID 1001, GID 1001).
 2. **Standalone Output**: Only bundled runtime assets in `.next/standalone` and static chunks in `.next/static` are packaged. Total image size is ~180 MB.
 3. **Zero Secrets in Image**: Build does not accept or bake secret arguments or environment files.
 4. **Deterministic Boot**: If `GROQ_API_KEY` is omitted, the service boots cleanly in deterministic Basic Mode.
@@ -46,12 +46,12 @@ Clear Air Companion is packaged as an Alpine Docker container running Next.js 14
 | `PORT` | No | `3000` | Port for the standalone server |
 | `APP_ORIGIN` | No | `http://localhost:3000` | Base URL for CORS and absolute URL formation |
 | `LOG_LEVEL` | No | `info` | Logging verbosity (`debug`, `info`, `warn`, `error`) |
-| `AQ_PROVIDER` | No | `open-meteo` | Upstream air quality provider adapter |
+| `AQ_PROVIDER` | No | `waqi` | Provider selection (validated in `src/server/config/env.ts`) |
 | `RATE_LIMIT_PLAN` | No | `6` | Plan generation requests per minute per IP (`RATE_LIMITS.planPerMinute`) |
 | `RATE_LIMIT_AQI` | No | `30` | Air quality requests per minute per IP (`RATE_LIMITS.airQualityPerMinute`) |
 | `RATE_LIMIT_GEOCODE` | No | `30` | Geocoding requests per minute per IP (`RATE_LIMITS.geocodePerMinute`) |
-| `TRUSTED_PROXY_HEADER` | No | `x-forwarded-for` | Header used for rate limit IP derivation |
-| `CLIENT_IP_SALT` | No | Auto-generated UUID | Salt for SHA-256 IP hashing (never store raw IP) |
+| `TRUSTED_PROXY_HEADER` | No | unset | Optional trusted-proxy header for client identification; configure only behind a trusted proxy |
+| `CLIENT_IP_SALT` | No | Random UUID per process | Salt for SHA-256 IP hashing |
 | `GROQ_API_KEY` | Optional | `undefined` | Groq API key for AI narration. If absent, the app falls back to the deterministic rules engine |
 | `GROQ_MODEL` | No | `openai/gpt-oss-120b` | Groq model identifier for AI narration |
 | `LLM_ENABLED` | No | `true` | Master toggle for LLM narration |
@@ -124,27 +124,10 @@ gcloud run deploy clear-air-companion \
 
 ## 5. Verification & Smoke Testing (REL-003, DEP-001)
 
-Once the container or standalone server is running on port 3000:
+Build and run the image or standalone server before smoke testing. Container execution has not been verified by this document.
 
 ```bash
 node scripts/smoke.mjs
 ```
 
-Expected output:
-```
-======================================================
-  VayuSaathi Smoke Verification: http://localhost:3000
-======================================================
-
-  • GET / (Root HTML & Security Headers)... ✓ PASS
-  • GET /api/health (Liveness probe)... ✓ PASS
-  • GET /api/ready (Readiness probe)... ✓ PASS
-  • GET /api/geocode?q=Delhi... ✓ PASS
-  • POST /api/plan (Deterministic plan generation)... ✓ PASS
-  • POST /api/bulletin (Bilingual WhatsApp RWA advisory)... ✓ PASS
-  • POST /api/ask (Follow-up Q&A with Guardrails)... ✓ PASS
-
-======================================================
-  ALL SMOKE CHECKS PASSED (100% OPERATIONAL)
-======================================================
-```
+The smoke script checks the server at its configured base URL. Record the actual result for the release; do not treat this example command as evidence of a completed deployment or rollback rehearsal.

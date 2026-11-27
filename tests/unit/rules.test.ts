@@ -34,7 +34,9 @@ describe('basic deterministic plan', () => {
       const plan = buildBasicPlan(profile, makeSnapshot(fixture.aqi, fixture.pm25), now);
       expect(plan.generatedAt).toBe(now.toISOString());
       expect(plan.candidateActionIds.length).toBeGreaterThan(0);
-      expect(plan.candidateActionIds).toEqual(fixture.actionIds);
+      const expectedActionIds =
+        fixture.aqi > 100 ? fixture.actionIds.filter((id) => id !== 'ACT-007') : fixture.actionIds;
+      expect(plan.candidateActionIds).toEqual(expectedActionIds);
       signatures.add(plan.candidateActionIds.join(','));
     }
     expect(signatures.size).toBeGreaterThan(1);
@@ -65,6 +67,15 @@ describe('basic deterministic plan', () => {
     const profile = makeProfile('medium', true);
     const plan = buildBasicPlan(profile, makeSnapshot(175, 72), now);
     expect(plan.candidateActionIds).not.toContain('ACT-003');
+  });
+
+  it('only recommends cooking ventilation that opens a window at AQI 100 or lower', () => {
+    const profile = makeProfile('medium', false);
+    const atThreshold = buildBasicPlan(profile, makeSnapshot(100, 36), now);
+    expect(atThreshold.candidateActionIds).toContain('ACT-007');
+
+    const aboveThreshold = buildBasicPlan(profile, makeSnapshot(101, 36), now);
+    expect(aboveThreshold.candidateActionIds).not.toContain('ACT-007');
   });
 
   it('uses only free actions for zero budget and marks paid items optional', () => {

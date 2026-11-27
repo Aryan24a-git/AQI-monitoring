@@ -91,7 +91,7 @@ flowchart TD
 ## 🚀 Quickstart
 
 ### Prerequisites
-- **Node.js**: `20.19.0` or `24.x LTS` (Node 24 recommended)
+- **Node.js**: `24.x` (matches the package engine and CI)
 - **npm**: `10+`
 
 ### Installation & Run
@@ -136,7 +136,7 @@ Every commit adheres to strict automated quality gates:
 # Run full verification suite (Format, Lint, TypeScript, Knip, Madge, Vitest)
 npm run check
 
-# Run unit and integration tests (31 test files, 137 tests passing)
+# Run unit and integration tests
 npm run test
 
 # Run Playwright E2E integration test
@@ -187,6 +187,14 @@ VayuSaathi provides actionable physical engineering and environmental lifestyle 
 - **Impact estimates**: Exposure reduction %, cigarette equivalents, and CO₂/NOx savings are rough literature-based estimates with visible source notes, not clinical or sensor-verified measurements.
 - **Device-local community state**: Saved ward pinboard reports, completed pledges, and household profile settings stay in your browser (`localStorage`) and are not synced to other devices or a server database.
 - **AI consent**: Your question and the day's air quality data are sent to Groq (`openai/gpt-oss-120b`) only after you grant explicit consent (`Allow`), enforced both in the browser and by server routes (`aiConsent: true`).
+- **Live demo**: No hosted demo URL is currently published. Run the app locally using the Quickstart steps above.
+- **AI availability**: Live Groq responses require a valid server-side `GROQ_API_KEY`; deterministic guidance remains available without it. Live-provider behavior depends on upstream service availability.
+
+## 🧾 Current Verification
+
+Latest local verification on 2026-11-27: `npm run check` passed with 148 unit/integration tests across 33 files and zero lint errors (65 ESLint warnings); `npm run build` succeeded; `npm run test:e2e` reported 64 passed and 2 skipped across desktop, tablet, and mobile, with no critical or serious axe violations. Both dependency audits reported zero vulnerabilities. The catalog validator accepted 26 actions and flagged 6 for D3 review. No hosted demo URL, deployed-service smoke test, or manual screen-reader sign-off is currently recorded.
+
+See [EVALUATION_PACK.md](./EVALUATION_PACK.md) for the current feature-to-criteria map and verification limits. Do not rely on older generated evidence files for current dependency versions or feature status.
 
 ---
 

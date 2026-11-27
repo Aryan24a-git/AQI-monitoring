@@ -14,6 +14,7 @@ export function isSafeAction(
     if (sensitive && effectiveEscalation >= 3) return false;
   }
   if (action.id === 'ACT-004' && aqi > 100) return false;
+  if (action.id === 'ACT-007' && aqi > 100) return false;
   if (action.id === 'ACT-006' && profile.hasPurifier) return false;
   if (action.id === 'ACT-006' && profile.housingType === 'well_sealed') return false;
   if (action.id === 'ACT-008' && profile.housingType === 'well_sealed') return false;

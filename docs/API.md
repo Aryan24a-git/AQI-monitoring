@@ -21,10 +21,10 @@ Standard codes: `BAD_REQUEST`, `VALIDATION_ERROR`, `PAYLOAD_TOO_LARGE`, `RATE_LI
 ## 1. System Probes
 
 ### GET /api/health
-Liveness probe. Returns `{ status: "ok", timestamp, version }`. Rate limit: 30/min.
+Liveness probe. Returns `{ status: "ok", timestamp, version }`. No route-specific token-bucket limit is configured.
 
 ### GET /api/ready
-Readiness probe. Returns `{ status: "ready", timestamp, llm }` where `llm` is `true` only when `LLM_ENABLED`, `GROQ_API_KEY` is present, and the configured `GROQ_MODEL` has not failed with a 404 model-not-found error. Rate limit: 30/min.
+Readiness probe. Returns `{ status: "ready", timestamp, llm }` where `llm` reflects the configured Groq client's readiness. No route-specific token-bucket limit is configured.
 
 ---
 
@@ -58,17 +58,20 @@ Synthesizes dynamic playbook items (indoor hacks, emission swaps, pledges) for a
 
 ---
 
-## 4. Multimodal IAQ Audit & Community
+## 4. Copilot & Community
 
 
 ### POST /api/ask
 Bounded follow-up Q&A with rate limiting, prompt injection defenses, and medical refusal guardrails.
 - Body limit: 16 kB.
 - Rate limit: 8/min.
+- `aiConsent` must be true before the server creates an LLM client; otherwise a basic response is returned.
 - Refuses medical diagnoses and off-topic prompts with safe disclaimers.
 
 ### POST /api/bulletin
 Generates bilingual (English / Hindi) WhatsApp RWA advisory bulletins with 1-tap copy text. Rate limit: 10/min.
+
+There is no photo-upload or `/api/audit` endpoint in the current application.
 
 ---
 

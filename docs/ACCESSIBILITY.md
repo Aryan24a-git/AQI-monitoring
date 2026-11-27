@@ -1,5 +1,7 @@
 # ACCESSIBILITY.md — Clear Air Companion
 
+> Automated and manual status entries below are historical notes unless re-run against the exact release commit. Keep manual items marked unverified until a person completes them.
+
 ## Standard
 
 WCAG 2.1 Level AA
@@ -154,6 +156,7 @@ WCAG 2.1 Level AA
 
 - `@axe-core/playwright` runs in E2E suite on every critical page state
 - Zero axe violations required to pass CI
+- Latest local E2E run on 2026-11-27: 64 passed, 2 skipped across desktop, tablet, and mobile; axe checks reported no critical or serious violations.
 
 ### Manual Checklist
 
