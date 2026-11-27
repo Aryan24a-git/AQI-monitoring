@@ -30,21 +30,59 @@ function DemoBanner({ onClear }: { onClear: () => void }) {
   );
 }
 
-function DashboardTabs({ state, actions }: { state: ReturnType<typeof useVayuSaathi>; actions: ReturnType<typeof useAppActions> }) {
+function CommunityTabView({ state }: { state: ReturnType<typeof useVayuSaathi> }) {
+  return (
+    <CommunityTab
+      location={state.location!}
+      profile={state.profile}
+      vent={state.vent}
+      impact={state.impact!}
+      completedPledgesCount={state.completedIds.length}
+      userCo2Kg={state.completedIds.length * 0.35}
+      hotspots={state.hotspots}
+      upvotedIds={state.upvotedIds}
+      onAddHotspot={state.addHotspot}
+      onToggleUpvote={state.toggleUpvote}
+      onRemoveHotspot={state.removeHotspot}
+    />
+  );
+}
+
+function DashboardTabs({
+  state,
+  actions,
+}: {
+  state: ReturnType<typeof useVayuSaathi>;
+  actions: ReturnType<typeof useAppActions>;
+}) {
   const loc = state.location!;
   const impact = state.impact!;
   return (
     <>
       <HeroSection location={loc} impact={impact} vent={state.vent} />
       {state.activeTab === 'playbook' && (
-        <DailyPlaybookTab playbook={state.playbook!} impact={impact} completedIds={state.completedIds} playbookSource={state.playbookSource} isGeneratingAI={state.isGeneratingAI} onTogglePledge={state.togglePledge} onGenerateAI={actions.handleGenerateAI} />
+        <DailyPlaybookTab
+          playbook={state.playbook!}
+          impact={impact}
+          completedIds={state.completedIds}
+          playbookSource={state.playbookSource}
+          isGeneratingAI={state.isGeneratingAI}
+          onTogglePledge={state.togglePledge}
+          onGenerateAI={actions.handleGenerateAI}
+        />
       )}
       {state.activeTab === 'copilot' && (
-        <CopilotTab location={loc} profile={state.profile} vent={state.vent} messages={state.chatMessages} onSendMessage={actions.handleSendMessage} onResetChat={() => state.initGreeting(loc)} isLoading={state.isChatLoading} />
+        <CopilotTab
+          location={loc}
+          profile={state.profile}
+          vent={state.vent}
+          messages={state.chatMessages}
+          onSendMessage={actions.handleSendMessage}
+          onResetChat={() => state.initGreeting(loc)}
+          isLoading={state.isChatLoading}
+        />
       )}
-      {state.activeTab === 'community' && (
-        <CommunityTab location={loc} profile={state.profile} vent={state.vent} impact={impact} completedPledgesCount={state.completedIds.length} userCo2Kg={state.completedIds.length * 0.35} hotspots={state.hotspots} upvotedIds={state.upvotedIds} onAddHotspot={state.addHotspot} onToggleUpvote={state.toggleUpvote} onRemoveHotspot={state.removeHotspot} />
-      )}
+      {state.activeTab === 'community' && <CommunityTabView state={state} />}
     </>
   );
 }
