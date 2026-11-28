@@ -7,7 +7,6 @@ import { useVayuSaathi } from '@/features/layout/useVayuSaathi';
 import { useAppActions } from '@/features/layout/useAppActions';
 import { TopHeader } from '@/features/layout/TopHeader';
 import { MobileNav } from '@/features/layout/MobileNav';
-import { AppFooter } from '@/features/layout/AppFooter';
 import { HeroSection } from '@/features/hero/HeroSection';
 import { LandingEmptyState } from '@/features/hero/LandingEmptyState';
 import { DailyPlaybookTab } from '@/features/playbook/DailyPlaybookTab';
@@ -129,7 +128,6 @@ function VayuSaathiApp() {
         onFetchLiveCity={state.loadLiveCity}
       />
       <MainContent state={state} actions={actions} />
-      <AppFooter />
       <MobileNav activeTab={state.activeTab} onTabChange={state.setActiveTab} />
       <ProfileDrawer
         isOpen={state.isProfileOpen}

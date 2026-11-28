@@ -6,6 +6,7 @@ import type { LocationScenario } from '@/domain/scenarios';
 import { type VentilationWindow, formatHour12 } from '@/domain/naqi';
 import { CHART_W, PAD_L, PAD_R } from './chartCoordinates';
 import { DispersionChartSvg } from './DispersionChartSvg';
+import { DispersionDataTable } from './DispersionDataTable';
 import { VentilationCallouts } from './VentilationCallouts';
 
 interface DispersionChartProps {
@@ -207,6 +208,11 @@ export function DispersionChart({ location, vent, bandColor }: DispersionChartPr
       </div>
       <JumpButtons vent={vent} activeHour={scrub.activeHour} onSelect={scrub.setActiveHour} />
       <VentilationCallouts vent={vent} />
+      <DispersionDataTable
+        pmData={location.hourlyPM25}
+        windData={location.hourlyWind}
+        vent={vent}
+      />
     </div>
   );
 }

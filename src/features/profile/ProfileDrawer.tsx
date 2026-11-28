@@ -34,7 +34,7 @@ function DrawerHeader({ onClose }: { onClose: () => void }) {
         type="button"
         onClick={onClose}
         aria-label="Close profile drawer"
-        className="p-2 rounded-xl hover:bg-stone-100 text-slate-600 hover:text-slate-900 transition"
+        className="min-w-[44px] min-h-[44px] inline-flex items-center justify-center rounded-xl hover:bg-stone-100 text-slate-600 hover:text-slate-900 transition"
       >
         <X className="w-5 h-5" />
       </button>
