@@ -42,7 +42,9 @@ export function DispersionDataTable({
                   <td className="px-2.5 py-1 font-medium">{formatHour12(hr)}</td>
                   <td className="px-2.5 py-1 tabular-nums">{pm}</td>
                   <td className="px-2.5 py-1 tabular-nums">{windData[hr]}</td>
-                  <td className="px-2.5 py-1">{isSafe ? 'Safe ventilation' : 'Keep sealed'}</td>
+                  <td className="px-2.5 py-1">
+                    {isSafe ? 'Least-polluted window' : 'Keep sealed'}
+                  </td>
                 </tr>
               );
             })}

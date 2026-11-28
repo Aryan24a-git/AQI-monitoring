@@ -95,6 +95,7 @@ function DeviceActionBanner({
   );
 }
 
+/** Community tab. */
 export function CommunityTab({
   location,
   profile,

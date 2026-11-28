@@ -14,6 +14,7 @@ export const ErrorCode = {
 
 export type ErrorCodeType = (typeof ErrorCode)[keyof typeof ErrorCode];
 
+/** Create api error. */
 export function createApiError(
   code: ErrorCodeType,
   message: string,

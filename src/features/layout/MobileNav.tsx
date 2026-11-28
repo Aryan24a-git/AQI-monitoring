@@ -18,6 +18,7 @@ const TABS: Array<{
   { id: 'community', label: 'Community', Icon: Users },
 ];
 
+/** Mobile nav. */
 export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
   return (
     <nav

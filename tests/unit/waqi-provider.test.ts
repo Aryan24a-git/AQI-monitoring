@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import {
   clearWaqiCache,
   fetchWaqiStation,
+  parseWaqiTimestampMs,
   usAqiToPm10,
   usAqiToPm25,
   validateWaqiReading,
@@ -135,6 +136,27 @@ describe('WAQI Air Quality Provider', () => {
         nowMs
       );
       expect(scenario.stationAqi?.mismatchWarning).toContain('differ by >2x');
+    });
+
+    it('accepts fresh reading, rejects 6-hour-old reading, and parses offset vs offset-less timestamps as station local time', () => {
+      const refNow = new Date(2026, 10, 28, 12, 0, 0).getTime();
+      const freshLocal = { ...baseReading, timeIso: '2026-11-28 11:00:00' };
+      const stale6hLocal = { ...baseReading, timeIso: '2026-11-28 06:00:00' };
+      const withOffset = { ...baseReading, timeIso: '2026-11-28T11:00:00+05:30' };
+
+      expect(validateWaqiReading(freshLocal, refNow)).toEqual({ valid: true, ageHours: 1 });
+      expect(validateWaqiReading(stale6hLocal, refNow)).toEqual({
+        valid: false,
+        reason: 'stale',
+        ageHours: 6,
+      });
+      expect(parseWaqiTimestampMs(withOffset.timeIso)).toBe(
+        Date.parse('2026-11-28T11:00:00+05:30')
+      );
+      // Offset-less `time.s` is parsed as local time, never UTC
+      expect(parseWaqiTimestampMs('2026-11-28 11:00:00')).toBe(
+        new Date(2026, 10, 28, 11, 0, 0).getTime()
+      );
     });
   });
 });

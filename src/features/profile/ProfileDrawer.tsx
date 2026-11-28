@@ -120,6 +120,7 @@ function ProfileDrawerBody({
   );
 }
 
+/** Profile drawer. */
 export function ProfileDrawer({
   isOpen,
   onClose,

@@ -8,10 +8,12 @@ const TIERS: Record<BudgetBand, readonly ('free' | 'low' | 'medium' | 'high')[]>
   high: ['free', 'low', 'medium', 'high'],
 };
 
+/** Is within budget. */
 export function isWithinBudget(action: Action, profile: Profile): boolean {
   return TIERS[profile.budgetBand].includes(action.budgetTier);
 }
 
+/** Is optional purchase. */
 export function isOptionalPurchase(action: Action): boolean {
   return action.budgetTier !== 'free';
 }

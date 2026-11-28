@@ -18,6 +18,7 @@ interface SectionProps {
   setDraft: React.Dispatch<React.SetStateAction<HouseholdProfile>>;
 }
 
+/** Vulnerability section. */
 export function VulnerabilitySection({ draft, setDraft }: SectionProps) {
   const toggleVuln = (v: Vulnerability) => {
     if (v === 'none') {
@@ -161,6 +162,7 @@ function CommuteDistanceSlider({
   );
 }
 
+/** Commute section. */
 export function CommuteSection({ draft, setDraft }: SectionProps) {
   return (
     <div className="space-y-3">
@@ -193,6 +195,7 @@ export function CommuteSection({ draft, setDraft }: SectionProps) {
   );
 }
 
+/** Budget section. */
 export function BudgetSection({ draft, setDraft }: SectionProps) {
   return (
     <div>

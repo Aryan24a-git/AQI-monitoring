@@ -116,6 +116,7 @@ export const ProfileV2Schema = z.object({
 });
 export type ProfileV2 = z.infer<typeof ProfileV2Schema>;
 
+/** Create default profile v2. */
 export function createDefaultProfileV2(): ProfileV2 {
   return {
     schemaVersion: 2,
@@ -173,6 +174,7 @@ export function migrateProfileV1ToV2(raw: unknown): ProfileV2 {
 
 // ─── Helpers (V1 Compatibility) ──────────────────────────────────────────────
 
+/** Get all vulnerability flags. */
 export function getAllVulnerabilityFlags(profile: Profile): Set<VulnerabilityFlag> {
   const flags = new Set<VulnerabilityFlag>();
   for (const member of profile.members) {
@@ -183,6 +185,7 @@ export function getAllVulnerabilityFlags(profile: Profile): Set<VulnerabilityFla
   return flags;
 }
 
+/** Has early escalation vulnerability. */
 export function hasEarlyEscalationVulnerability(profile: Profile): boolean {
   const flags = getAllVulnerabilityFlags(profile);
   const early: VulnerabilityFlag[] = [
@@ -196,10 +199,12 @@ export function hasEarlyEscalationVulnerability(profile: Profile): boolean {
   return early.some((f) => flags.has(f));
 }
 
+/** Count vulnerability flags. */
 export function countVulnerabilityFlags(profile: Profile): number {
   return getAllVulnerabilityFlags(profile).size;
 }
 
+/** Migrate profile v2 to v1. */
 export function migrateProfileV2ToV1(data: ProfileV2): Profile {
   const members: HouseholdMember[] = [];
   if (data.vulnerabilities.includes('kids'))
@@ -245,6 +250,7 @@ export function migrateProfile(raw: unknown): Profile | null {
   return null;
 }
 
+/** Create default profile. */
 export function createDefaultProfile(): Profile {
   return {
     schemaVersion: PROFILE_SCHEMA_VERSION,

@@ -16,7 +16,10 @@ function PrivacySection({ title, children }: { title: string; children: React.Re
 /** Static privacy and data-handling notice explaining device-local storage and AI consent. */
 export default function PrivacyPage() {
   return (
-    <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 space-y-6 text-slate-800">
+    <main
+      id="main-content"
+      className="max-w-3xl mx-auto px-4 sm:px-6 py-10 space-y-6 text-slate-800"
+    >
       <div className="space-y-2">
         <Link href="/" className="text-xs font-semibold text-teal-700 underline">
           &larr; Back to VayuSaathi

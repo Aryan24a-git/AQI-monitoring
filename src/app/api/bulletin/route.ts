@@ -4,6 +4,7 @@ import { handleBulletin } from '@/server/api/bulletin';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+/** Next.js POST route handler for /api/bulletin. */
 export async function POST(req: NextRequest) {
   return handleBulletin(req);
 }

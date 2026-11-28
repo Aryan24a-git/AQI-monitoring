@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { fetchOpenMeteoSnapshot } from '@/server/providers/openMeteoAirQuality';
-import { fetchWaqiStation } from '@/server/providers/waqiAirQuality';
+import { fetchWaqiStation, validateWaqiReading } from '@/server/providers/waqiAirQuality';
+import { formatAgeLabel, formatObservationTime } from '@/server/api/cityScenarioBuilder';
 import { getEnv } from '@/server/config/env';
 import { findBandByPm25 } from '@/domain/bands';
 import { REQUEST_ID_HEADER } from '@/server/http/requestId';
@@ -20,29 +21,46 @@ const QuerySchema = z.object({
   lon: CoordSchema.pipe(z.number().min(-180).max(180)),
 });
 
+function fallbackNoteForReason(reason: 'stale' | 'far' | 'missing_pm25' | undefined): string {
+  if (reason === 'stale') return 'Nearest WAQI station reading is >3h old — showing model only';
+  if (reason === 'far') return 'Nearest WAQI station is >25km away — showing model only';
+  return 'Nearest WAQI station lacked PM2.5 — showing model only';
+}
+
 async function fetchAirQualityPayload(lat: number, lon: number) {
   const env = getEnv();
+  let stationFallbackNote: string | undefined;
   if (env.AQ_PROVIDER.toLowerCase() === 'waqi' && env.WAQI_API_TOKEN) {
     const station = await fetchWaqiStation(lat, lon, env.WAQI_API_TOKEN);
-    return {
-      aqi: station.aqi,
-      pm25: station.pm25,
-      timestamp: station.timeIso ?? new Date().toISOString(),
-      source: 'WAQI Station (aqicn.org)',
-      isFallback: false,
-      isStale: false,
-      band: findBandByPm25(station.pm25).key,
-    };
+    const check = validateWaqiReading(station);
+    if (check.valid) {
+      return {
+        aqi: station.aqi,
+        pm25: station.pm25,
+        timestamp: station.timeIso ?? new Date().toISOString(),
+        obsTime: formatObservationTime(station.timeIso),
+        ageLabel: formatAgeLabel(check.ageHours),
+        stationName: station.stationName,
+        distanceKm: station.distanceKm,
+        source: 'WAQI Station (aqicn.org)',
+        isFallback: false,
+        isStale: false,
+        band: findBandByPm25(station.pm25).key,
+      };
+    }
+    stationFallbackNote = fallbackNoteForReason(check.reason);
   }
   const snapshot = await fetchOpenMeteoSnapshot(lat, lon);
   return {
     aqi: snapshot.aqi,
     pm25: snapshot.pm25,
     timestamp: snapshot.timestamp,
+    obsTime: formatObservationTime(snapshot.timestamp),
     source: snapshot.provider,
     isFallback: snapshot.isFallback,
     isStale: snapshot.isStale,
     band: snapshot.band,
+    ...(stationFallbackNote ? { stationFallbackNote } : {}),
   };
 }
 

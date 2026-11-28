@@ -53,6 +53,7 @@ function AiTailoredBanner({ playbook }: { playbook: PlaybookData }) {
   );
 }
 
+/** Daily playbook tab. */
 export function DailyPlaybookTab({
   playbook,
   impact,

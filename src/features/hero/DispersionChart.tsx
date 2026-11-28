@@ -47,7 +47,7 @@ function HourStatusBar({
         <span
           className={`px-2 py-0.5 rounded-md text-[11px] font-bold ${isSafeSlot ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-stone-200 text-slate-700'}`}
         >
-          {isSafeSlot ? 'Optimal Safe Ventilation' : 'Keep Windows Sealed'}
+          {isSafeSlot ? 'Least-polluted window' : 'Keep Windows Sealed'}
         </span>
       </div>
       <div className="flex items-center gap-4 text-slate-700">

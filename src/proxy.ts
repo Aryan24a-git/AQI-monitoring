@@ -9,6 +9,7 @@ function generateNonce(): string {
   return Buffer.from(bytes).toString('base64');
 }
 
+/** Proxy. */
 export function proxy(request: NextRequest): NextResponse {
   const nonce = generateNonce();
 

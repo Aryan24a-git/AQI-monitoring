@@ -71,6 +71,7 @@ export type HouseholdProfile = z.infer<typeof HouseholdProfileSchema>;
 
 // ─── Location & Coordinate Rounding (DATA-001) ────────────────────────────────
 
+/** Round coordinate. */
 export function roundCoordinate(val: number): number {
   const factor = Math.pow(10, COORD_DECIMAL_PLACES);
   return Math.round(val * factor) / factor;

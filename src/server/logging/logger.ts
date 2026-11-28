@@ -27,6 +27,7 @@ export const REDACTED_PATHS = [
   '*.*.question',
 ];
 
+/** Create logger. */
 export function createLogger(options?: LoggerOptions, destination?: DestinationStream) {
   return pino(
     {

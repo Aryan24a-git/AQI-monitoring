@@ -50,6 +50,8 @@ export class MemoryBucketStore implements BucketStore {
     for (const [k, v] of this.buckets) {
       if (nowMs - v.lastRefillMs > this.ttlMs) {
         this.buckets.delete(k);
+      } else {
+        break;
       }
     }
   }
@@ -101,6 +103,7 @@ export class TokenBucketLimiter {
 
 const salt = getEnv().CLIENT_IP_SALT || randomUUID();
 
+/** Get hashed client key. */
 export function getHashedClientKey(
   req: Request,
   trustedHeader = process.env['TRUSTED_PROXY_HEADER']

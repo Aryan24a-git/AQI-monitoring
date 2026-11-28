@@ -2,6 +2,7 @@
 
 import React from 'react';
 
+/** Error page. */
 export default function ErrorPage({
   error,
   reset,

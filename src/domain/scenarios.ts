@@ -37,6 +37,7 @@ export interface LocationScenario {
   hourlyWind: number[];
   hourlyError?: string;
   isSynthetic?: boolean;
+  pm25Approx?: boolean;
   stationAqi?: StationAqiInfo;
   stationFallbackNote?: string;
 }

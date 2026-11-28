@@ -6,6 +6,7 @@ const AI_CONSENT_KEY = 'vayusaathi_ai_consent';
 export type AiConsentChoice = 'allow' | 'basic';
 export type PendingAiAction = { type: 'playbook' } | { type: 'ask'; text: string };
 
+/** Use ai consent. */
 export function useAiConsent() {
   const [aiConsent, setAiConsent] = useState<AiConsentChoice | null>(() => {
     if (typeof window === 'undefined') return null;

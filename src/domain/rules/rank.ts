@@ -2,6 +2,7 @@ import type { Action } from '../../catalog/catalog.schema';
 import type { Profile } from '../profile';
 import { getAllVulnerabilityFlags } from '../profile';
 
+/** Impact score. */
 export function impactScore(action: Action, pm25: number): number {
   const range = action.impact.magnitudeRange;
   const average = (range.low + range.high) / 2;
@@ -9,11 +10,13 @@ export function impactScore(action: Action, pm25: number): number {
   return average * pollutantFactor;
 }
 
+/** Effort for. */
 export function effortFor(action: Action): number {
   const effort = { free: 1, low: 2, medium: 4, high: 8 };
   return effort[action.budgetTier];
 }
 
+/** Rank actions. */
 export function rankActions(
   actions: readonly Action[],
   profile: Profile,

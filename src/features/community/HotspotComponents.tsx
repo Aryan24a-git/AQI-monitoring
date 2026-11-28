@@ -171,6 +171,7 @@ function HotspotCardHeader({
   );
 }
 
+/** Hotspot card. */
 export function HotspotCard({ item, isUpvoted, onToggleUpvote, onRemove }: HotspotCardProps) {
   return (
     <article className="rounded-2xl border border-stone-200 bg-white p-4 flex flex-col justify-between gap-3 hover:border-stone-300 transition">

@@ -24,6 +24,7 @@ const BulletinRequestSchema = z.object({
   aiConsent: z.boolean().optional().default(false),
 });
 
+/** Handle bulletin. */
 export async function handleBulletin(req: NextRequest) {
   return withJsonGuard(req, limiter, BulletinRequestSchema, async ({ requestId, body }) => {
     const fallbackText = formatWhatsAppBulletin(body);
@@ -38,8 +39,8 @@ export async function handleBulletin(req: NextRequest) {
       const windSystemNote = body.wind != null ? `wind speed (${body.wind} km/h), ` : '';
       const windPromptNote = body.wind != null ? `Wind: ${body.wind} km/h, ` : '';
       const aiText = await createLlmClient().complete({
-        system: `Write a fresh, neighborly WhatsApp RWA air-quality bulletin using WhatsApp *bold* formatting and emojis. ${langInstruction} Include the exact CPCB NAQI, PM2.5, safe ventilation window, seal time, ${windSystemNote}and 2 practical community actions (no leaf burning, low-emission commute/wet mopping). Keep under 900 characters. Zero medical claims, no URLs.`,
-        prompt: `Society: ${body.rwaName || body.shortCity + ' RWA'}, City: ${body.city}, NAQI: ${body.naqi} (${body.bandLabel}), PM2.5: ${body.pm25} µg/m³, Cigs eq: ${body.cigsPerDay}/day, ${windPromptNote}Safe Window: ${body.windowLabel}, Seal By: ${body.sealLabel}.`,
+        system: `Write a fresh, neighborly WhatsApp RWA air-quality bulletin using WhatsApp *bold* formatting and emojis. ${langInstruction} Include the exact CPCB NAQI, PM2.5, least-polluted ventilation window, seal time, ${windSystemNote}and 2 practical community actions (no leaf burning, low-emission commute/wet mopping). Keep under 900 characters. Zero medical claims, no URLs.`,
+        prompt: `Society: ${body.rwaName || body.shortCity + ' RWA'}, City: ${body.city}, NAQI: ${body.naqi} (${body.bandLabel}), PM2.5: ${body.pm25} µg/m³, Cigs eq: ${body.cigsPerDay}/day, ${windPromptNote}Best Window: ${body.windowLabel}, Seal By: ${body.sealLabel}.`,
         maxTokens: 800,
         timeoutMs: 12_000,
       });

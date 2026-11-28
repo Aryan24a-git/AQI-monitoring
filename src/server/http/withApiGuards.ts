@@ -11,6 +11,7 @@ import { apiErrorResponse } from '@/server/security/response';
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 
+/** Create rate limiter. */
 export function createRateLimiter(limitPerMinute: number): TokenBucketLimiter {
   return new TokenBucketLimiter(limitPerMinute, RATE_LIMIT_WINDOW_MS, new MemoryBucketStore());
 }
@@ -20,6 +21,7 @@ function rateLimitedResponse(requestId: string, seconds: number) {
   return apiErrorResponse(error, 429, { 'Retry-After': String(seconds) });
 }
 
+/** With rate limit. */
 export async function withRateLimit(
   req: NextRequest,
   limiter: TokenBucketLimiter,
@@ -38,6 +40,7 @@ export async function withRateLimit(
   }
 }
 
+/** With json guard. */
 export async function withJsonGuard<T>(
   req: NextRequest,
   limiter: TokenBucketLimiter,

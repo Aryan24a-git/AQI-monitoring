@@ -17,10 +17,10 @@ export function formatWhatsAppBulletin(req: BulletinInput): string {
   const name = req.rwaName.trim() || `${req.shortCity} Residents Welfare Group`;
   const hasVent = Boolean(req.windowLabel && req.sealLabel);
   const hiVentLine = hasVent
-    ? `💨 *सुरक्षित वेंटिलेशन समय:* केवल *${req.windowLabel}* के बीच खिड़कियाँ खोलें। शाम *${req.sealLabel}* तक बंद रखें।`
-    : `💨 *सुरक्षित वेंटिलेशन:* प्रति-घंटा पूर्वानुमान उपलब्ध नहीं है — धुंध रहने तक खिड़कियाँ बंद रखें।`;
+    ? `💨 *सबसे कम धुंध का समय:* वेंटिलेशन के लिए सबसे कम प्रदूषित समय *${req.windowLabel}* है। शाम *${req.sealLabel}* तक खिड़कियाँ बंद रखें।`
+    : `💨 *वेंटिलेशन सलाह:* प्रति-घंटा पूर्वानुमान उपलब्ध नहीं है — धुंध रहने तक खिड़कियाँ बंद रखें।`;
   const enVentLine = hasVent
-    ? `🪟 *Safe Ventilation Window:* Open windows only during *${req.windowLabel}*. Seal doors/windows by *${req.sealLabel}*.`
+    ? `🪟 *Best Window to Ventilate:* Least-polluted window is *${req.windowLabel}*. Seal doors/windows by *${req.sealLabel}*.`
     : `🪟 *Ventilation Guidance:* Hourly forecast unavailable — keep windows sealed while outdoor haze remains high.`;
 
   if (req.lang === 'hi') {

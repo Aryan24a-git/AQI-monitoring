@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 
 export const REQUEST_ID_HEADER = 'x-request-id';
 
+/** Get request id. */
 export function getRequestId(req: Request): string {
   const existing = req.headers.get(REQUEST_ID_HEADER);
   if (existing && existing.trim().length > 0) {

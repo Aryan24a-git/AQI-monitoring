@@ -88,6 +88,7 @@ export function findBandByAqi(aqi: number): AqiBandDefinition {
   return AQI_BANDS.find((b) => clamped >= b.aqiMin && clamped <= b.aqiMax) ?? FALLBACK_BAND;
 }
 
+/** Find band by pm25. */
 export function findBandByPm25(pm25: number): AqiBandDefinition {
   const clamped = Math.max(0, pm25);
   return AQI_BANDS.find((b) => clamped >= b.pm25Min && clamped <= b.pm25Max) ?? FALLBACK_BAND;

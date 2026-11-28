@@ -2,6 +2,7 @@ import type { Action } from '../../catalog/catalog.schema';
 import type { Profile, VulnerabilityFlag } from '../profile';
 import { getAllVulnerabilityFlags } from '../profile';
 
+/** Is applicable. */
 export function isApplicable(
   action: Action,
   profile: Profile,

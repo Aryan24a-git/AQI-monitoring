@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 
+/** App footer. */
 export function AppFooter() {
   return (
     <footer className="w-full max-w-6xl mx-auto px-4 sm:px-6 pt-6 pb-20 md:pb-6 text-xs text-slate-600 border-t border-stone-200/80 flex flex-col sm:flex-row items-center justify-between gap-2">

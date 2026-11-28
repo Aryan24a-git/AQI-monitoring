@@ -105,7 +105,9 @@ test.describe('V2-30 Full Suite', () => {
     await page.keyboard.press('ArrowRight');
     const jumpBtn = page.getByRole('button', { name: /Seal/i }).first();
     await jumpBtn.click();
-    await expect(page.getByText(/Keep Windows Sealed|Optimal Safe Ventilation/i)).toBeVisible();
+    await expect(
+      page.getByText(/Keep Windows Sealed|Least-polluted window/i).first()
+    ).toBeVisible();
   });
 
   test('Fetch Live calls /api/city-scenario', async ({ page }) => {

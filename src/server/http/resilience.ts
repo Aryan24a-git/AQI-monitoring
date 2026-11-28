@@ -28,12 +28,14 @@ const ALLOWED_HOSTS = new Set([
   'api.waqi.info',
 ]);
 
+/** Assert allowed upstream. */
 export function assertAllowedUpstream(url: URL): void {
   if (!ALLOWED_HOSTS.has(url.hostname)) {
     throw new ProviderError('HTTP_ERROR', 'Outbound host is not allowlisted');
   }
 }
 
+/** Fetch with timeout. */
 export async function fetchWithTimeout(
   url: URL,
   timeoutMs: number,
@@ -132,6 +134,7 @@ export class CircuitBreaker {
   }
 }
 
+/** Fetch validated json. */
 export async function fetchValidatedJson<T>(
   url: URL | string,
   parse: (raw: unknown) => T,

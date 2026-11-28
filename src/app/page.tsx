@@ -29,13 +29,21 @@ function DemoBanner({ onClear }: { onClear: () => void }) {
   );
 }
 
-function CommunityTabView({ state }: { state: ReturnType<typeof useVayuSaathi> }) {
+function CommunityTabView({
+  state,
+  location,
+  impact,
+}: {
+  state: ReturnType<typeof useVayuSaathi>;
+  location: NonNullable<ReturnType<typeof useVayuSaathi>['location']>;
+  impact: NonNullable<ReturnType<typeof useVayuSaathi>['impact']>;
+}) {
   return (
     <CommunityTab
-      location={state.location!}
+      location={location}
       profile={state.profile}
       vent={state.vent}
-      impact={state.impact!}
+      impact={impact}
       completedPledgesCount={state.completedIds.length}
       userCo2Kg={state.completedIds.length * 0.35}
       hotspots={state.hotspots}
@@ -50,18 +58,22 @@ function CommunityTabView({ state }: { state: ReturnType<typeof useVayuSaathi> }
 function DashboardTabs({
   state,
   actions,
+  location,
+  impact,
+  playbook,
 }: {
   state: ReturnType<typeof useVayuSaathi>;
   actions: ReturnType<typeof useAppActions>;
+  location: NonNullable<ReturnType<typeof useVayuSaathi>['location']>;
+  impact: NonNullable<ReturnType<typeof useVayuSaathi>['impact']>;
+  playbook: NonNullable<ReturnType<typeof useVayuSaathi>['playbook']>;
 }) {
-  const loc = state.location!;
-  const impact = state.impact!;
   return (
     <>
-      <HeroSection location={loc} impact={impact} vent={state.vent} />
+      <HeroSection location={location} impact={impact} vent={state.vent} />
       {state.activeTab === 'playbook' && (
         <DailyPlaybookTab
-          playbook={state.playbook!}
+          playbook={playbook}
           impact={impact}
           completedIds={state.completedIds}
           playbookSource={state.playbookSource}
@@ -72,16 +84,18 @@ function DashboardTabs({
       )}
       {state.activeTab === 'copilot' && (
         <CopilotTab
-          location={loc}
+          location={location}
           profile={state.profile}
           vent={state.vent}
           messages={state.chatMessages}
           onSendMessage={actions.handleSendMessage}
-          onResetChat={() => state.initGreeting(loc)}
+          onResetChat={() => state.initGreeting(location)}
           isLoading={state.isChatLoading}
         />
       )}
-      {state.activeTab === 'community' && <CommunityTabView state={state} />}
+      {state.activeTab === 'community' && (
+        <CommunityTabView state={state} location={location} impact={impact} />
+      )}
     </>
   );
 }
@@ -93,11 +107,11 @@ function MainContent({
   state: ReturnType<typeof useVayuSaathi>;
   actions: ReturnType<typeof useAppActions>;
 }) {
-  const ready = state.location && state.impact && state.playbook;
+  const { location, impact, playbook } = state;
   return (
     <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 space-y-6">
-      {state.location?.isSynthetic && <DemoBanner onClear={state.clearAllData} />}
-      {!ready || state.isLoadingCity ? (
+      {location?.isSynthetic && <DemoBanner onClear={state.clearAllData} />}
+      {!location || !impact || !playbook || state.isLoadingCity ? (
         <LandingEmptyState
           isLoading={state.isLoadingCity}
           error={state.cityError}
@@ -107,7 +121,13 @@ function MainContent({
           onManualPm25={actions.handleManualPm25}
         />
       ) : (
-        <DashboardTabs state={state} actions={actions} />
+        <DashboardTabs
+          state={state}
+          actions={actions}
+          location={location}
+          impact={impact}
+          playbook={playbook}
+        />
       )}
     </main>
   );
@@ -146,6 +166,7 @@ function VayuSaathiApp() {
   );
 }
 
+/** Home page. */
 export default function HomePage() {
   return (
     <ToastProvider>

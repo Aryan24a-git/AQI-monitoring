@@ -93,6 +93,7 @@ export const NO2_BREAKPOINTS: readonly [number, number, number, number][] = [
   [400, 520, 401, 500],
 ];
 
+/** Calc sub index. */
 export function calcSubIndex(
   conc: number,
   breakpoints: readonly [number, number, number, number][]
@@ -147,6 +148,7 @@ function pickDominantPollutant(
   return { naqi: Math.min(500, Math.max(1, top.val)), dominant: top.label };
 }
 
+/** Calculate cpcbnaqi. */
 export function calculateCPCBNAQI(pm25: number, pm10?: number, no2?: number): NaqiResult {
   if (!areFinitePollutants(pm25, pm10, no2)) {
     throw new TypeError(
@@ -191,6 +193,7 @@ export function safeCalculateCPCBNAQI(
   return ok(calculateCPCBNAQI(pm25, pm10, no2));
 }
 
+/** Format hour12. */
 export function formatHour12(hour24: number): string {
   const h = ((hour24 % 24) + 24) % 24;
   const suffix = h >= 12 ? 'PM' : 'AM';

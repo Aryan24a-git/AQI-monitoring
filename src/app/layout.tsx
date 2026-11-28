@@ -14,6 +14,7 @@ export const metadata: Metadata = {
   description: 'Personalized, grounded guidance for households navigating severe winter smog.',
 };
 
+/** Root layout. */
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const headerStore = await headers();
   const nonce = headerStore.get('x-nonce') ?? '';

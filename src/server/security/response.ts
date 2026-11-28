@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { ApiError } from '../../domain/types';
 import { withSecurityHeaders } from './headers';
 
+/** Security json. */
 export function securityJson(body: unknown, status = 200, headers?: HeadersInit): NextResponse {
   const response = NextResponse.json(body, { status, headers });
   if (headers) {
@@ -10,6 +11,7 @@ export function securityJson(body: unknown, status = 200, headers?: HeadersInit)
   return withSecurityHeaders(response);
 }
 
+/** Api error response. */
 export function apiErrorResponse(
   error: ApiError,
   status: number,

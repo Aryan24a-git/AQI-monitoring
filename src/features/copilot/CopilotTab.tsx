@@ -15,6 +15,7 @@ interface CopilotTabProps {
   isLoading: boolean;
 }
 
+/** Copilot tab. */
 export function CopilotTab({
   location,
   profile,

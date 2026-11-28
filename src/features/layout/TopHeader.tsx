@@ -204,6 +204,7 @@ function CitySearchForm({ onFetchLiveCity }: { onFetchLiveCity: (city: string) =
   );
 }
 
+/** Top header. */
 export function TopHeader({
   profile,
   activeTab,

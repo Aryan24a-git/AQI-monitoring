@@ -19,6 +19,7 @@ const RequestSchema = z.object({
   aiConsent: z.boolean().optional().default(false),
 });
 
+/** Handle ask. */
 export async function handleAsk(req: NextRequest) {
   return withJsonGuard(req, limiter, RequestSchema, async ({ requestId, body }) => {
     const now = new Date();

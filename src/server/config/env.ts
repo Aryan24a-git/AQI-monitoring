@@ -31,6 +31,7 @@ export type Env = z.infer<typeof EnvSchema>;
 
 let cachedEnv: Env | null = null;
 
+/** Validate env. */
 export function validateEnv(raw: Record<string, string | undefined>): Env {
   const result = EnvSchema.safeParse(raw);
   if (!result.success) {
@@ -42,6 +43,7 @@ export function validateEnv(raw: Record<string, string | undefined>): Env {
   return result.data;
 }
 
+/** Get env. */
 export function getEnv(): Env {
   if (!cachedEnv || process.env['NODE_ENV'] === 'test') {
     cachedEnv = validateEnv(process.env);

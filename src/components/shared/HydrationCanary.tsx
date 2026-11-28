@@ -4,6 +4,7 @@
 
 import { useEffect } from 'react';
 
+/** Hydration canary. */
 export function HydrationCanary() {
   useEffect(() => {
     document.body.dataset.hydrated = 'true';

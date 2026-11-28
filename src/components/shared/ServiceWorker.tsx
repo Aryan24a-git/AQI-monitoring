@@ -8,6 +8,7 @@ interface ServiceWorkerProps {
   nonce?: string;
 }
 
+/** Service worker. */
 export function ServiceWorker({ nonce: _nonce }: ServiceWorkerProps) {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;

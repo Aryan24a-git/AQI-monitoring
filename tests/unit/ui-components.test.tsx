@@ -11,6 +11,7 @@ import { AqiHeroCard } from '@/features/hero/AqiHeroCard';
 import { DispersionChart } from '@/features/hero/DispersionChart';
 import { HotspotForm } from '@/features/community/HotspotComponents';
 import { WhatsAppGenerator } from '@/features/community/WhatsAppGenerator';
+import { VentilationCallouts } from '@/features/hero/VentilationCallouts';
 import { ToastProvider } from '@/features/layout/ToastContainer';
 
 afterEach(cleanup);
@@ -54,13 +55,85 @@ describe('UI components', () => {
     expect(onDecline).toHaveBeenCalledOnce();
   });
 
-  it('AqiHeroCard shows Not measured for missing optional pollutants and station approx note', () => {
-    const loc = makeSampleScenario({ sourceLabel: 'Station reading (WAQI)' });
-    const impact = computeDeterministicImpact(loc, DEFAULT_PROFILE);
-    render(<AqiHeroCard location={loc} impact={impact} />);
+  it('AqiHeroCard labels all four source paths accurately without contradiction', () => {
+    // 1. City with fresh WAQI station: Open-Meteo model tiles + separate Station AQI note
+    const cityWithStation = makeSampleScenario({
+      sourceLabel: 'Model-derived NAQI equivalent (Open-Meteo)',
+      pm10: 143,
+      no2: 32,
+      wind: 4,
+      stationAqi: {
+        usAqi: 205,
+        stationName: 'Mandir Marg',
+        distanceKm: 3.6,
+        ageLabel: '1.4h ago',
+        obsTime: '11:00 am',
+      },
+    });
+    render(
+      <AqiHeroCard
+        location={cityWithStation}
+        impact={computeDeterministicImpact(cityWithStation, DEFAULT_PROFILE)}
+      />
+    );
+    expect(screen.getByText('Model-derived NAQI equivalent (Open-Meteo)')).toBeTruthy();
+    expect(screen.getAllByText('Open-Meteo model').length).toBe(4);
+    expect(screen.queryByText(/approx\. from station AQI/i)).toBeNull();
+    expect(screen.getByText(/Station AQI \(US scale\):/i)).toBeTruthy();
+    cleanup();
+
+    // 2. City with model only (stale WAQI fallback)
+    const cityModelOnly = makeSampleScenario({
+      sourceLabel: 'Model-derived NAQI equivalent (Open-Meteo)',
+      pm10: 143,
+      no2: 32,
+      wind: 4,
+      stationFallbackNote: 'Nearest WAQI station reading is >3h old — showing model only',
+    });
+    render(
+      <AqiHeroCard
+        location={cityModelOnly}
+        impact={computeDeterministicImpact(cityModelOnly, DEFAULT_PROFILE)}
+      />
+    );
+    expect(screen.getAllByText('Open-Meteo model').length).toBe(4);
+    expect(screen.getByText(/Nearest WAQI station reading is >3h old/i)).toBeTruthy();
+    cleanup();
+
+    // 3. GPS station reading
+    const gpsLoc = makeSampleScenario({
+      id: 'gps-28.61-77.21',
+      sourceLabel: 'Station observation (WAQI)',
+      pm25Approx: true,
+    });
+    render(
+      <AqiHeroCard location={gpsLoc} impact={computeDeterministicImpact(gpsLoc, DEFAULT_PROFILE)} />
+    );
     expect(screen.getAllByText('Not measured').length).toBeGreaterThanOrEqual(3);
     expect(screen.getByText(/NAQI estimated from PM2\.5 only/i)).toBeTruthy();
     expect(screen.getByText(/approx\. from station AQI/i)).toBeTruthy();
+    cleanup();
+
+    // 4. Manual PM2.5 entry
+    const manualLoc = makeSampleScenario();
+    render(
+      <AqiHeroCard
+        location={manualLoc}
+        impact={computeDeterministicImpact(manualLoc, DEFAULT_PROFILE)}
+      />
+    );
+    expect(screen.getByText('User-entered')).toBeTruthy();
+    expect(screen.getAllByText('Not measured').length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('VentilationCallouts labels least-polluted window and warns when avgWindowPM > 60', () => {
+    const loc = makeSampleScenario();
+    const vent = findSafeVentilationWindow(loc.hourlyPM25, loc.hourlyWind);
+    render(<VentilationCallouts vent={vent} />);
+    expect(screen.getByText(/Best window to ventilate:/i)).toBeTruthy();
+    expect(screen.getByText(/Least-polluted window/i)).toBeTruthy();
+    expect(screen.getByText(/outdoor PM2\.5/i)).toBeTruthy();
+    expect(screen.getByText(/Even the cleanest hours are still/i)).toBeTruthy();
   });
 
   it('DispersionChart responds to keyboard arrows and renders 24-hour data table', () => {

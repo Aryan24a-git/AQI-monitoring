@@ -25,6 +25,7 @@ export function isLlmModelUnavailable(): boolean {
   return modelUnavailable;
 }
 
+/** Record llm success. */
 export function recordLlmSuccess(): void {
   modelSucceeded = true;
   cachedReadyProbe = { ok: true, checkedAt: Date.now() };
@@ -38,6 +39,7 @@ export function resetLlmAvailabilityForTests(): void {
   cachedReadyProbe = null;
 }
 
+/** Strip markdown code fences. */
 export function stripMarkdownCodeFences(raw: string): string {
   return raw
     .trim()
@@ -46,6 +48,7 @@ export function stripMarkdownCodeFences(raw: string): string {
     .trim();
 }
 
+/** Handle groq model error. */
 export function handleGroqModelError(status: number, model: string, bodyText = ''): boolean {
   const isNotFound =
     status === 404 ||
@@ -145,6 +148,7 @@ export class GroqClient implements LlmClient {
   }
 }
 
+/** Create llm client. */
 export function createLlmClient(): LlmClient {
   const env = getEnv();
   const apiKey = env.GROQ_API_KEY;
@@ -152,6 +156,7 @@ export function createLlmClient(): LlmClient {
   return new GroqClient(apiKey, env.GROQ_MODEL);
 }
 
+/** Check llm readiness. */
 export async function checkLlmReadiness(): Promise<boolean> {
   const env = getEnv();
   if (!env.LLM_ENABLED || !env.GROQ_API_KEY || modelUnavailable) return false;

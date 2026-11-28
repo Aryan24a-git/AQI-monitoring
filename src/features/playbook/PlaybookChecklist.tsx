@@ -130,6 +130,7 @@ function ChecklistCard({
   );
 }
 
+/** Playbook checklist. */
 export function PlaybookChecklist({
   iaqHacks,
   emissionSwaps,

@@ -8,6 +8,7 @@ export interface ActionExplanation {
   disclaimer: string;
 }
 
+/** Explain action. */
 export function explainAction(action: Action, pm25: number): ActionExplanation {
   const impact = formatImpactForDisplay(action.impact);
   const factor = pm25 > 0 ? Math.min(pm25 / 150, 2) : 1;

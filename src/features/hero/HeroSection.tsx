@@ -12,6 +12,7 @@ interface HeroSectionProps {
   vent: VentilationWindow | null;
 }
 
+/** Hero section. */
 export function HeroSection({ location, impact, vent }: HeroSectionProps) {
   return (
     <section

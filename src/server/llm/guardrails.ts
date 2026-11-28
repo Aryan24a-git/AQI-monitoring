@@ -67,15 +67,18 @@ function collectImpactNumbers(impacts: ReadonlyMap<string, readonly string[]>): 
   return allowed;
 }
 
+/** Extract standalone numbers. */
 export function extractStandaloneNumbers(text: string): string[] {
   const textWithoutIds = text.replace(/(?:act|iaq|swap)-\d+/gi, '');
   return textWithoutIds.match(/(?<![A-Za-z0-9])\d+(?:\.\d+)?(?![A-Za-z0-9])/g) ?? [];
 }
 
+/** Are numbers grounded. */
 export function areNumbersGrounded(text: string, allowed: ReadonlySet<string>): boolean {
   return extractStandaloneNumbers(text).every((number) => allowed.has(number));
 }
 
+/** Classify question scope. */
 export function classifyQuestionScope(question: string): 'air' | 'indoor' | 'living' | 'off_topic' {
   const lower = question.toLowerCase();
   if (containsInjection(lower) || /diagnos|prescrib|medicine|dosage|treat my/i.test(lower)) {
@@ -89,6 +92,7 @@ export function classifyQuestionScope(question: string): 'air' | 'indoor' | 'liv
   return 'off_topic';
 }
 
+/** Contains injection. */
 export function containsInjection(text: string): boolean {
   return (
     INJECTION_PATTERNS.some((pattern) => pattern.test(text)) ||

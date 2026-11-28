@@ -150,6 +150,7 @@ async function enhancePlaybookWithAi(
   }
 }
 
+/** Handle playbook. */
 export async function handlePlaybook(req: NextRequest) {
   return withJsonGuard(req, limiter, PlaybookRequestSchema, async ({ requestId, body }) => {
     const { location, profile, aiConsent } = body;

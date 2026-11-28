@@ -15,6 +15,7 @@ export interface LowestPm25Window {
   values: readonly number[];
 }
 
+/** Lowest pm25 window. */
 export function lowestPm25Window(
   hourly: readonly (number | HourlyPm25)[],
   windowHours: number

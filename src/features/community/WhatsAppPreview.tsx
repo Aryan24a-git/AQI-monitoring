@@ -7,6 +7,7 @@ interface WhatsAppPreviewProps {
   onCopy: () => void;
 }
 
+/** Whats app preview. */
 export function WhatsAppPreview({ bulletinText, lang, onCopy }: WhatsAppPreviewProps) {
   return (
     <>

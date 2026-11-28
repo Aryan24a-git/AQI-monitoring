@@ -47,19 +47,28 @@ function StationAqiNote({ location }: { location: LocationScenario }) {
   return null;
 }
 
+function getTileNotes(location: LocationScenario): { pm25Note?: string; modelNote?: string } {
+  const isStationPrimary = Boolean(
+    location.pm25Approx || /station|waqi/i.test(location.sourceLabel)
+  );
+  const isOpenMeteo = /open-meteo/i.test(location.sourceLabel);
+  const pm25Note = isStationPrimary
+    ? 'approx. from station AQI'
+    : isOpenMeteo
+      ? 'Open-Meteo model'
+      : location.id.startsWith('manual-')
+        ? 'User-entered'
+        : undefined;
+  return { pm25Note, modelNote: isOpenMeteo ? 'Open-Meteo model' : undefined };
+}
+
 function PollutantGrid({ location }: { location: LocationScenario }) {
-  const isFromStationAqi =
-    location.stationAqi != null || /station|waqi/i.test(location.sourceLabel);
+  const { pm25Note, modelNote } = getTileNotes(location);
   const tiles = [
-    {
-      label: 'PM2.5',
-      value: location.pm25,
-      unit: 'µg/m³',
-      note: isFromStationAqi ? 'approx. from station AQI' : undefined,
-    },
-    { label: 'PM10', value: location.pm10, unit: 'µg/m³' },
-    { label: 'NO₂', value: location.no2, unit: 'µg/m³' },
-    { label: 'Wind', value: location.wind, unit: 'km/h' },
+    { label: 'PM2.5', value: location.pm25, unit: 'µg/m³', note: pm25Note },
+    { label: 'PM10', value: location.pm10, unit: 'µg/m³', note: modelNote },
+    { label: 'NO₂', value: location.no2, unit: 'µg/m³', note: modelNote },
+    { label: 'Wind', value: location.wind, unit: 'km/h', note: modelNote },
   ];
   return (
     <div className="grid grid-cols-4 gap-2 pt-1">
@@ -156,6 +165,7 @@ function HeroBadgeHeader({
   );
 }
 
+/** Aqi hero card. */
 export function AqiHeroCard({ location, impact }: AqiHeroCardProps) {
   const { naqi, dominant, band, cigsPerDay, isPm25Only } = impact.aqi;
   const bandStyle = getBandStyle(band.label);

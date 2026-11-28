@@ -36,6 +36,7 @@ export function extractHourlySeries(
   return { ok: true, series: first24.map((v) => Math.max(1, Math.round(v as number))) };
 }
 
+/** Format observation time. */
 export function formatObservationTime(localIsoTime: string | undefined, tzAbbr?: string): string {
   const match = localIsoTime?.match(/[T ](\d{2}):(\d{2})/);
   if (!match) return 'latest reading';
@@ -47,12 +48,14 @@ export function formatObservationTime(localIsoTime: string | undefined, tzAbbr?:
   return `${hour12}:${minute} ${period}${tz}`;
 }
 
+/** Format age label. */
 export function formatAgeLabel(ageHours: number | undefined): string {
   if (ageHours == null || !Number.isFinite(ageHours)) return 'latest';
   if (ageHours < 1) return `${Math.max(1, Math.round(ageHours * 60))}m ago`;
   return `${Math.round(ageHours * 10) / 10}h ago`;
 }
 
+/** Check aqi mismatch. */
 export function checkAqiMismatch(
   stationAqi: number,
   modelUsAqi: number | undefined
@@ -65,6 +68,7 @@ export function checkAqiMismatch(
   return undefined;
 }
 
+/** Build scenario from data. */
 export function buildScenarioFromData(
   city: string,
   admin1: string | undefined,

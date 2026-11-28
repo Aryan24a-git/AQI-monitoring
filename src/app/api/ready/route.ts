@@ -3,6 +3,7 @@ import { checkLlmReadiness } from '@/server/llm/client';
 import { getRequestId } from '@/server/http/requestId';
 import { apiErrorResponse, securityJson } from '@/server/security/response';
 
+/** Next.js GET route handler for /api/ready. */
 export async function GET(req: NextRequest) {
   const requestId = getRequestId(req);
   try {

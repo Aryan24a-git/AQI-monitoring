@@ -29,6 +29,7 @@ const AQI_CACHE = new LruCache<string, AirQualitySnapshot>({
 const AQI_CALLS = new RequestCoalescer<string, AirQualitySnapshot>();
 const BREAKER = new CircuitBreaker({ failureThreshold: 5, openMs: 30_000 });
 
+/** Round coordinates. */
 export function roundCoordinates(lat: number, lon: number): { lat: number; lon: number } {
   return { lat: Math.round(lat * 100) / 100, lon: Math.round(lon * 100) / 100 };
 }
@@ -106,6 +107,7 @@ async function loadSnapshot(
   }
 }
 
+/** Fetch open meteo snapshot. */
 export async function fetchOpenMeteoSnapshot(
   lat: number,
   lon: number,

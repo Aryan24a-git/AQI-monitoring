@@ -2,6 +2,7 @@
 // Satisfies: REQ-001, REQ-003, V2-30
 import type { LocationScenario } from '@/domain/scenarios';
 
+/** Fetch live indian city. */
 export async function fetchLiveIndianCity(cityQuery: string): Promise<LocationScenario | null> {
   const clean = cityQuery.trim();
   if (clean.length < 2) return null;
@@ -14,6 +15,7 @@ export async function fetchLiveIndianCity(cityQuery: string): Promise<LocationSc
   return (await res.json()) as LocationScenario;
 }
 
+/** Fetch live by coords. */
 export async function fetchLiveByCoords(lat: number, lon: number): Promise<LocationScenario> {
   const rLat = Math.round(lat * 100) / 100;
   const rLon = Math.round(lon * 100) / 100;
@@ -25,28 +27,37 @@ export async function fetchLiveByCoords(lat: number, lon: number): Promise<Locat
     pm25: number;
     aqi: number;
     timestamp: string;
+    obsTime?: string;
+    ageLabel?: string;
+    stationName?: string;
+    distanceKm?: number;
     source?: string;
+    stationFallbackNote?: string;
   };
   const pm25 = Math.max(1, Math.round(reading.pm25));
-  const timeStr = new Date(reading.timestamp).toLocaleTimeString('en-IN', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const obsTime = reading.obsTime || 'latest reading';
+  const agePart = reading.ageLabel ? `${reading.ageLabel} (${obsTime})` : obsTime;
   const sourceText = reading.source?.trim() || 'Live air-quality reading';
+  const isWaqi = /waqi|station/i.test(sourceText);
   return {
     id: `gps-${rLat}-${rLon}`,
     city: `Your Area (${rLat}, ${rLon})`,
     shortCity: 'Your Area',
-    subtitle: `${sourceText} · ${timeStr}`,
-    sourceLabel: sourceText,
+    subtitle: `${sourceText} · ${agePart}`,
+    sourceLabel: isWaqi
+      ? 'Station observation (WAQI)'
+      : 'Model-derived NAQI equivalent (Open-Meteo)',
     pm25,
     hourlyPM25: [],
     hourlyWind: [],
     hourlyError: 'Hourly forecast unavailable',
     isSynthetic: false,
+    ...(isWaqi ? { pm25Approx: true } : {}),
+    ...(reading.stationFallbackNote ? { stationFallbackNote: reading.stationFallbackNote } : {}),
   };
 }
 
+/** Build manual scenario. */
 export function buildManualScenario(pm25Raw: number, cityLabel = 'Manual Entry'): LocationScenario {
   const pm25 = Math.max(1, Math.min(1000, Math.round(pm25Raw)));
   const nowStr = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });

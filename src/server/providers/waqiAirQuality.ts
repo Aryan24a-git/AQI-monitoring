@@ -20,6 +20,7 @@ const WaqiDataSchema = z.object({
     .object({
       iso: z.string().optional(),
       s: z.string().optional(),
+      tz: z.string().optional(),
     })
     .optional(),
   iaqi: z
@@ -50,6 +51,7 @@ export interface WaqiValidationResult {
   ageHours?: number;
 }
 
+/** Haversine km. */
 export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
@@ -60,6 +62,31 @@ export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: numb
   return Math.round(6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
 }
 
+/**
+ * Parses a WAQI timestamp string to epoch ms.
+ * Uses explicit ISO offset when present; treats offset-less `time.s` as station local time, never UTC.
+ */
+export function parseWaqiTimestampMs(timeStr: string | undefined): number | undefined {
+  if (!timeStr) return undefined;
+  const trimmed = timeStr.trim();
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(trimmed)) {
+    const ms = Date.parse(trimmed);
+    return Number.isFinite(ms) ? ms : undefined;
+  }
+  const m = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/);
+  if (!m) return undefined;
+  const ms = new Date(
+    Number(m[1]),
+    Number(m[2]) - 1,
+    Number(m[3]),
+    Number(m[4]),
+    Number(m[5]),
+    Number(m[6] ?? '0')
+  ).getTime();
+  return Number.isFinite(ms) ? ms : undefined;
+}
+
+/** Validate waqi reading. */
 export function validateWaqiReading(
   reading: WaqiStationReading,
   nowMs = Date.now()
@@ -71,13 +98,11 @@ export function validateWaqiReading(
     return { valid: false, reason: 'far' };
   }
   let ageHours: number | undefined;
-  if (reading.timeIso) {
-    const parsedMs = Date.parse(reading.timeIso);
-    if (Number.isFinite(parsedMs)) {
-      ageHours = (nowMs - parsedMs) / 3_600_000;
-      if (ageHours > WAQI_STALE_HOURS) {
-        return { valid: false, reason: 'stale', ageHours };
-      }
+  const parsedMs = parseWaqiTimestampMs(reading.timeIso);
+  if (parsedMs !== undefined) {
+    ageHours = (nowMs - parsedMs) / 3_600_000;
+    if (ageHours > WAQI_STALE_HOURS) {
+      return { valid: false, reason: 'stale', ageHours };
     }
   }
   return { valid: true, ageHours };
@@ -123,6 +148,7 @@ export function usAqiToPm25(aqi: number): number {
   );
 }
 
+/** Us aqi to pm10. */
 export function usAqiToPm10(aqi: number): number {
   return Math.max(
     1,
@@ -141,11 +167,20 @@ function optMap(val: number | undefined, fn: (n: number) => number): number | un
   return val != null ? fn(val) : undefined;
 }
 
+function resolveStationTime(time: z.infer<typeof WaqiDataSchema>['time']): string | undefined {
+  if (time?.iso) return time.iso;
+  if (!time?.s) return undefined;
+  if (time.tz && /^[+-]\d{2}:?\d{2}$/.test(time.tz.trim())) {
+    return `${time.s.replace(' ', 'T')}${time.tz.trim()}`;
+  }
+  return time.s;
+}
+
 function readStationMeta(d: z.infer<typeof WaqiDataSchema>, lat: number, lon: number) {
   const geo = d.city?.geo;
   return {
     stationName: d.city?.name,
-    timeIso: d.time?.iso ?? d.time?.s,
+    timeIso: resolveStationTime(d.time),
     distanceKm: geo ? haversineKm(lat, lon, geo[0], geo[1]) : undefined,
   };
 }

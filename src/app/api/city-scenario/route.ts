@@ -4,6 +4,7 @@ import { handleCityScenario } from '@/server/api/cityScenario';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+/** Next.js GET route handler for /api/city-scenario. */
 export async function GET(req: NextRequest) {
   return handleCityScenario(req);
 }
