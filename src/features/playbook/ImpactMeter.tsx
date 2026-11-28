@@ -164,12 +164,12 @@ function MeterMetricsRow({
 
 function MeterProgressBar({ pct }: { pct: number }) {
   return (
-    <div className="w-full h-3 bg-stone-100 rounded-full overflow-hidden border border-stone-200/70">
-      <div
-        className="h-full bg-gradient-to-r from-teal-600 to-emerald-500 rounded-full transition-all duration-500"
-        style={{ width: `${pct}%` }}
-      />
-    </div>
+    <progress
+      value={pct}
+      max={100}
+      aria-label="Playbook completion progress"
+      className="w-full h-3 rounded-full overflow-hidden accent-teal-600 bg-stone-100 border border-stone-200/70"
+    />
   );
 }
 

@@ -20,7 +20,7 @@ export function proxy(request: NextRequest): NextResponse {
   const csp = [
     "default-src 'self'",
     scriptSrc,
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self'",
     "img-src 'self' data: blob:",
     "font-src 'self'",
     "connect-src 'self'",
@@ -44,6 +44,9 @@ export function proxy(request: NextRequest): NextResponse {
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Cross-Origin-Opener-Policy', 'same-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self)');
+  if (!isDev) {
+    response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
+  }
 
   return response;
 }

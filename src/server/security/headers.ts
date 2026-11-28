@@ -14,5 +14,8 @@ export function withSecurityHeaders(response: NextResponse): NextResponse {
   for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
     response.headers.set(key, value);
   }
+  if (process.env.NODE_ENV === 'production') {
+    response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains');
+  }
   return response;
 }

@@ -86,6 +86,23 @@ function PollutantGrid({ location }: { location: LocationScenario }) {
   );
 }
 
+const BAND_STYLES: Record<string, { bg: string; text: string; soft: string }> = {
+  Good: {
+    bg: 'bg-emerald-700',
+    text: 'text-emerald-700',
+    soft: 'bg-emerald-50 border-emerald-200',
+  },
+  Satisfactory: { bg: 'bg-lime-700', text: 'text-lime-700', soft: 'bg-lime-50 border-lime-200' },
+  Moderate: { bg: 'bg-amber-700', text: 'text-amber-700', soft: 'bg-amber-50 border-amber-200' },
+  Poor: { bg: 'bg-orange-700', text: 'text-orange-700', soft: 'bg-orange-50 border-orange-200' },
+  'Very Poor': { bg: 'bg-red-700', text: 'text-red-700', soft: 'bg-red-50 border-red-200' },
+  Severe: { bg: 'bg-rose-900', text: 'text-rose-900', soft: 'bg-rose-50 border-rose-200' },
+};
+
+function getBandStyle(label: string) {
+  return BAND_STYLES[label] ?? BAND_STYLES.Moderate;
+}
+
 function CigaretteEquivalentNote({
   cigsPerDay,
   band,
@@ -93,10 +110,10 @@ function CigaretteEquivalentNote({
   cigsPerDay: number;
   band: CalculatedImpact['aqi']['band'];
 }) {
+  const bandStyle = getBandStyle(band.label);
   return (
     <div
-      className="rounded-xl p-3.5 border flex items-start gap-3 transition-colors"
-      style={{ backgroundColor: band.softBg, borderColor: band.border }}
+      className={`rounded-xl p-3.5 border flex items-start gap-3 transition-colors ${bandStyle.soft}`}
     >
       <div className="p-2 rounded-lg bg-white/80 shadow-sm shrink-0">
         <Activity className="w-4 h-4 text-slate-800" />
@@ -141,12 +158,10 @@ function HeroBadgeHeader({
 
 export function AqiHeroCard({ location, impact }: AqiHeroCardProps) {
   const { naqi, dominant, band, cigsPerDay, isPm25Only } = impact.aqi;
+  const bandStyle = getBandStyle(band.label);
   return (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden flex flex-col justify-between">
-      <div
-        className="h-2 w-full transition-colors duration-300"
-        style={{ backgroundColor: band.color }}
-      />
+      <div className={`h-2 w-full transition-colors duration-300 ${bandStyle.bg}`} />
       <div className="p-5 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -157,15 +172,14 @@ export function AqiHeroCard({ location, impact }: AqiHeroCardProps) {
           </div>
           <div className="text-right shrink-0">
             <div
-              className="inline-flex flex-col items-center justify-center px-4 py-2 rounded-2xl text-white shadow-sm min-w-[92px] transition-colors duration-300"
-              style={{ backgroundColor: band.color }}
+              className={`inline-flex flex-col items-center justify-center px-4 py-2 rounded-2xl text-white shadow-sm min-w-[92px] transition-colors duration-300 ${bandStyle.bg}`}
             >
               <span className="text-[10px] uppercase tracking-wider font-semibold text-white">
                 CPCB NAQI
               </span>
               <span className="font-extrabold text-3xl leading-none mt-0.5">{naqi}</span>
             </div>
-            <div className="text-xs font-bold mt-1.5 text-center" style={{ color: band.color }}>
+            <div className={`text-xs font-bold mt-1.5 text-center ${bandStyle.text}`}>
               {band.label}
             </div>
           </div>

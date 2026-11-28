@@ -5,6 +5,7 @@ const analyzer = withBundleAnalyzer({ enabled: process.env['ANALYZE'] === 'true'
 
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
   output: 'standalone',
   devIndicators: false,
   async headers() {
