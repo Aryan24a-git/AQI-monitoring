@@ -3,6 +3,7 @@
 // Source: Central Pollution Control Board (CPCB), Ministry of Environment, Forest & Climate Change (2014)
 
 import { ok, err, type Result } from './result';
+import { PM25_PER_CIGARETTE } from './emissions';
 
 export interface CpcbBand {
   max: number;
@@ -145,7 +146,7 @@ export function calculateCPCBNAQI(pm25: number, pm10: number, no2 = 0): NaqiResu
   }
   naqi = Math.min(500, Math.max(1, naqi));
   const band = CPCB_BANDS.find((b) => naqi <= b.max) || CPCB_BANDS[CPCB_BANDS.length - 1];
-  const cigsPerDay = Number((Math.max(0, pm25) / 22).toFixed(1));
+  const cigsPerDay = Number((Math.max(0, pm25) / PM25_PER_CIGARETTE.value).toFixed(1));
 
   return { naqi, dominant, band, cigsPerDay, subIndices: { subPM25, subPM10, subNO2 } };
 }

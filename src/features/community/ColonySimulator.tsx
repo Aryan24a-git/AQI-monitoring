@@ -3,6 +3,14 @@
 import React, { useState } from 'react';
 import { Calculator, CloudOff, Fuel, Trees } from 'lucide-react';
 import type { HouseholdProfile } from '@/domain/scenarios';
+import {
+  CO2_PER_KM,
+  DEFAULT_COMMUTE_KM,
+  NOX_PER_KM,
+  PETROL_CO2_PER_LITRE,
+  WEEKS_PER_MONTH,
+  simulateColonyImpact,
+} from '@/domain/emissions';
 
 interface ColonySimulatorProps {
   profile: HouseholdProfile;
@@ -110,12 +118,10 @@ function SimulatorMetrics({
 export function ColonySimulator({ profile }: ColonySimulatorProps) {
   const [families, setFamilies] = useState(120);
   const [daysPerWeek, setDaysPerWeek] = useState(4);
-  const avgKm = profile.commuteMode === 'wfh' ? 14 : Number(profile.commuteKm || 16);
-  const monthlySwaps = families * daysPerWeek * 4.3;
-  const co2SavedKg = Math.round(monthlySwaps * avgKm * 0.136);
-  const petrolSavedL = Math.round(co2SavedKg / 2.31);
-  const treesEquiv = Math.round(co2SavedKg / 1.75);
-  const noxKg = ((monthlySwaps * avgKm * 0.65) / 1000).toFixed(1);
+  const avgKm =
+    profile.commuteMode === 'wfh' ? 14 : Number(profile.commuteKm ?? DEFAULT_COMMUTE_KM.value);
+  const sim = simulateColonyImpact(families, daysPerWeek, avgKm);
+  const noxKg = (sim.monthlyNoxGrams / 1000).toFixed(1);
 
   return (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between space-y-4">
@@ -140,9 +146,9 @@ export function ColonySimulator({ profile }: ColonySimulatorProps) {
           onDaysChange={setDaysPerWeek}
         />
         <SimulatorMetrics
-          co2SavedKg={co2SavedKg}
-          petrolSavedL={petrolSavedL}
-          treesEquiv={treesEquiv}
+          co2SavedKg={sim.monthlyCo2Kg}
+          petrolSavedL={sim.monthlyPetrolLitres}
+          treesEquiv={sim.monthlyTreesEquiv}
         />
       </div>
       <details className="rounded-xl bg-stone-50 border border-stone-200/70 px-3 py-2 text-[11px] text-slate-700">
@@ -153,10 +159,14 @@ export function ColonySimulator({ profile }: ColonySimulatorProps) {
           Based on an average <strong className="font-semibold">{avgKm} km</strong> daily
           round-trip, if <strong className="font-semibold">{families} families</strong> shift to
           Metro/Bus or carpooling <strong className="font-semibold">{daysPerWeek} days/week</strong>{' '}
-          (4.3 weeks/mo, ~0.136 kg CO₂/km car vs transit, 2.31 kg CO₂/L petrol, 0.65 g NOx/km), your
+          ({WEEKS_PER_MONTH.value} weeks/mo, ~{CO2_PER_KM.value.solo_car} kg CO₂/km car vs transit,{' '}
+          {PETROL_CO2_PER_LITRE.value} kg CO₂/L petrol, {NOX_PER_KM.value.solo_car} g NOx/km), your
           society prevents{' '}
-          <strong className="font-semibold">{(co2SavedKg / 1000).toFixed(2)} tonnes CO₂</strong> and
-          ~<strong className="font-semibold">{noxKg} kg</strong> NOx/month. Confidence: low-medium.
+          <strong className="font-semibold">
+            {(sim.monthlyCo2Kg / 1000).toFixed(2)} tonnes CO₂
+          </strong>{' '}
+          and ~<strong className="font-semibold">{noxKg} kg</strong> NOx/month. Confidence:
+          low-medium.
         </p>
       </details>
     </div>

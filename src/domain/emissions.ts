@@ -1,8 +1,7 @@
-// Emissions, Impact & Colony What-If Model
+// Single Source of Truth for Emissions, Exposure & Colony Impact Constants
 // Strictly typed, functions < 40 lines, file < 250 lines (NFR-004)
 
-import type { HouseholdProfile } from './scenarios';
-import type { NaqiResult } from './naqi';
+export type CommuteModeKey = 'solo_car' | 'two_wheeler' | 'public_transit' | 'wfh';
 
 export interface SourcedConstant<T> {
   value: T;
@@ -12,68 +11,117 @@ export interface SourcedConstant<T> {
 }
 
 /**
- * Passenger emissions per kilometre by commute mode.
- * Source: ICCT India Passenger Transport emissions & CPCB vehicular factors.
+ * Net tailpipe CO2 saved per km when shifting from the given commute mode to low-emission transit.
+ * Units: kg CO2 / km.
  */
-export const CO2_PER_KM: SourcedConstant<Record<HouseholdProfile['commuteMode'], number>> = {
+export const CO2_PER_KM: SourcedConstant<Record<CommuteModeKey, number>> = {
   value: {
-    solo_car: 0.18, // 180g CO2/km (petrol sedan)
-    two_wheeler: 0.045, // 45g CO2/km (125cc 4-stroke)
-    public_transit: 0.025, // 25g CO2/pass-km (Metro / CNG bus grid average)
+    solo_car: 0.136,
+    two_wheeler: 0.037,
+    public_transit: 0.0,
     wfh: 0.0,
   },
-  sourceNote: 'ICCT India light-duty vehicle emissions & CPCB urban transport factors',
-  confidence: 'medium',
-  isEstimate: false,
-};
-
-export const NOX_PER_KM: SourcedConstant<Record<HouseholdProfile['commuteMode'], number>> = {
-  value: {
-    solo_car: 0.35, // 350mg NOx/km
-    two_wheeler: 0.15,
-    public_transit: 0.05,
-    wfh: 0.0,
-  },
-  sourceNote: 'BS-VI real-world driving emissions literature estimate',
+  sourceNote:
+    'Heuristic net CO2 delta per km vs urban transit (unverified composite estimate; ICCT/CPCB range)',
   confidence: 'low',
   isEstimate: true,
 };
 
-export const EXPOSURE_DROP_PURIFIER: SourcedConstant<Record<HouseholdProfile['purifier'], number>> =
-  {
-    value: {
-      none: 0.0,
-      one_room: 0.35,
-      whole_home: 0.65,
-    },
-    sourceNote: 'Indoor HEPA filtration trials in NCR residential apartments',
-    confidence: 'medium',
-    isEstimate: true,
-  };
-
-export const EXPOSURE_DROP_BUDGET: SourcedConstant<Record<HouseholdProfile['budgetTier'], number>> =
-  {
-    value: {
-      zero_cost: 0.15, // Towel weather-sealing + diurnal ventilation
-      diy_2000: 0.3, // Silicone weatherstrips + door sweeps + exhaust isolation
-      paid_upgrades: 0.55, // HEPA + active air sealing
-    },
-    sourceNote: 'IIT Delhi & CSE indoor air quality intervention measurements',
-    confidence: 'low',
-    isEstimate: true,
-  };
-
-export const WEEKS_PER_MONTH: SourcedConstant<number> = {
-  value: 4.33,
-  sourceNote: '52 weeks / 12 months average monthly multiplier',
-  confidence: 'high',
-  isEstimate: false,
+/**
+ * Net tailpipe NOx saved per km when shifting from the given commute mode to low-emission transit.
+ * Units: g NOx / km (grams, not milligrams).
+ */
+export const NOX_PER_KM: SourcedConstant<Record<CommuteModeKey, number>> = {
+  value: {
+    solo_car: 0.65,
+    two_wheeler: 0.28,
+    public_transit: 0.0,
+    wfh: 0.0,
+  },
+  sourceNote:
+    'Heuristic net NOx delta per km in g/km for urban Indian petrol cars & 2-wheelers (unverified estimate)',
+  confidence: 'low',
+  isEstimate: true,
 };
 
-export const TREE_ABSORPTION_KG_CO2_YEAR: SourcedConstant<number> = {
-  value: 22.0,
+/**
+ * Fixed daily CO2 / NOx savings for modes that do not scale linearly by commute km
+ * (public_transit errand-batching and WFH zero-idling/home-energy baseline).
+ */
+export const COMMUTE_BASELINE_CO2_KG: SourcedConstant<{ public_transit: number; wfh: number }> = {
+  value: { public_transit: 0.65, wfh: 0.85 },
+  sourceNote: 'Heuristic daily CO2 saving from errand batching & zero-idling (unverified estimate)',
+  confidence: 'low',
+  isEstimate: true,
+};
+
+export const COMMUTE_BASELINE_NOX_G: SourcedConstant<{ public_transit: number; wfh: number }> = {
+  value: { public_transit: 3.2, wfh: 2.6 },
+  sourceNote: 'Heuristic daily NOx saving in grams from errand batching & zero-idling (unverified)',
+  confidence: 'low',
+  isEstimate: true,
+};
+
+/** Baseline daily household kitchen/errand CO2 (kg) and NOx (g) savings. */
+export const HOUSEHOLD_BASELINE_CO2_KG: SourcedConstant<number> = {
+  value: 0.35,
+  sourceNote: 'Heuristic daily household cooking/idling CO2 saving baseline (unverified estimate)',
+  confidence: 'low',
+  isEstimate: true,
+};
+
+export const HOUSEHOLD_BASELINE_NOX_G: SourcedConstant<number> = {
+  value: 1.4,
+  sourceNote: 'Heuristic daily household NOx saving baseline in grams (unverified estimate)',
+  confidence: 'low',
+  isEstimate: true,
+};
+
+/**
+ * Additive indoor PM2.5 exposure reduction components (percentage points), capped at maxCap.
+ */
+export const EXPOSURE_DROP_COMPONENTS: SourcedConstant<{
+  base: number;
+  kitchenExhaust: number;
+  purifierOneRoom: number;
+  purifierWholeHome: number;
+  budgetDiyNoPurifier: number;
+  budgetPaidNoPurifier: number;
+  maxCap: number;
+}> = {
+  value: {
+    base: 46,
+    kitchenExhaust: 6,
+    purifierOneRoom: 14,
+    purifierWholeHome: 22,
+    budgetDiyNoPurifier: 12,
+    budgetPaidNoPurifier: 16,
+    maxCap: 76,
+  },
   sourceNote:
-    'European Environment Agency & Arbor Day Foundation: mature tree absorption ~22 kg CO2/year',
+    'Heuristic additive indoor PM2.5 reduction model (window sealing + wet mop + HEPA/exhaust); unverified composite estimate',
+  confidence: 'low',
+  isEstimate: true,
+};
+
+export const DEFAULT_COMMUTE_KM: SourcedConstant<number> = {
+  value: 16,
+  sourceNote: 'Default NCR urban round-trip commute distance when user commuteKm is unset',
+  confidence: 'low',
+  isEstimate: true,
+};
+
+export const WEEKS_PER_MONTH: SourcedConstant<number> = {
+  value: 4.3,
+  sourceNote: 'Approximate weeks per month (~52 / 12) for monthly colony projections',
+  confidence: 'medium',
+  isEstimate: true,
+};
+
+export const TREE_ABSORPTION_KG_CO2_MONTH: SourcedConstant<number> = {
+  value: 1.75,
+  sourceNote:
+    'Mature tree CO2 absorption ~21 kg/year (~1.75 kg/month; EEA & Arbor Day Foundation rough average)',
   confidence: 'medium',
   isEstimate: true,
 };
@@ -86,7 +134,7 @@ export const PETROL_CO2_PER_LITRE: SourcedConstant<number> = {
   isEstimate: false,
 };
 
-const PM25_PER_CIGARETTE: SourcedConstant<number> = {
+export const PM25_PER_CIGARETTE: SourcedConstant<number> = {
   value: 22.0,
   sourceNote:
     'Berkeley Earth methodology (Muller & Rohde 2015): 22 µg/m³ PM2.5 equates to ~1 cigarette/day exposure',
@@ -94,82 +142,43 @@ const PM25_PER_CIGARETTE: SourcedConstant<number> = {
   isEstimate: true,
 };
 
-export interface CalculatedDeterministicImpact {
-  exposureReductionPercent: number;
-  cigsAvoidedPerDay: number;
-  monthlyCo2SavedKg: number;
-  monthlyPetrolSavedLitres: number;
-  treeMonthsEquivalent: number;
-  confidence: 'high' | 'medium' | 'low';
-  isEstimate: true;
-}
-
-export function computeDeterministicImpact(
-  profile: HouseholdProfile,
-  aqi: NaqiResult
-): CalculatedDeterministicImpact {
-  const purDrop = EXPOSURE_DROP_PURIFIER.value[profile.purifier] || 0;
-  const budDrop = EXPOSURE_DROP_BUDGET.value[profile.budgetTier] || 0.15;
-  const exhaustBonus = profile.kitchenExhaust ? 0.08 : 0.0;
-  const totalDrop = Math.min(0.85, purDrop + budDrop + exhaustBonus);
-
-  const cigsTotal = aqi.cigsPerDay;
-  const cigsAvoided = Number((cigsTotal * totalDrop).toFixed(1));
-
-  const roundTripKm = profile.commuteMode === 'wfh' ? 0 : profile.commuteKm;
-  const co2Factor = CO2_PER_KM.value[profile.commuteMode] || 0;
-  const monthlyCo2 = Number((roundTripKm * co2Factor * 22).toFixed(1));
-  const monthlyPetrol = Number((monthlyCo2 / PETROL_CO2_PER_LITRE.value).toFixed(1));
-  const treeMonths = Number((monthlyCo2 / (TREE_ABSORPTION_KG_CO2_YEAR.value / 12)).toFixed(1));
-
-  return {
-    exposureReductionPercent: Math.round(totalDrop * 100),
-    cigsAvoidedPerDay: cigsAvoided,
-    monthlyCo2SavedKg: monthlyCo2,
-    monthlyPetrolSavedLitres: monthlyPetrol,
-    treeMonthsEquivalent: treeMonths,
-    confidence: 'medium',
-    isEstimate: true,
-  };
-}
-
 export interface ColonySimulationResult {
   families: number;
   daysPerWeek: number;
   monthlyCo2Kg: number;
   monthlyPetrolLitres: number;
-  treesAnnualEquivalent: number;
+  monthlyTreesEquiv: number;
   monthlyNoxGrams: number;
-  confidence: 'medium';
+  confidence: 'low';
   isEstimate: true;
   methodologyNote: string;
 }
 
+/**
+ * Rough estimate of monthly collective savings when neighbours swap solo car commutes.
+ */
 export function simulateColonyImpact(
   families: number,
   daysPerWeek: number,
-  avgRoundTripKm = 16
+  avgRoundTripKm = DEFAULT_COMMUTE_KM.value
 ): ColonySimulationResult {
   const cleanFamilies = Math.max(1, Math.min(10000, families));
   const cleanDays = Math.max(1, Math.min(7, daysPerWeek));
-  const monthlyTripsPerFamily = cleanDays * WEEKS_PER_MONTH.value;
+  const monthlySwaps = cleanFamilies * cleanDays * WEEKS_PER_MONTH.value;
 
-  const co2SavedPerTrip = avgRoundTripKm * CO2_PER_KM.value.solo_car;
-  const noxSavedPerTrip = avgRoundTripKm * NOX_PER_KM.value.solo_car;
-
-  const monthlyCo2 = Math.round(cleanFamilies * monthlyTripsPerFamily * co2SavedPerTrip);
-  const monthlyPetrol = Math.round(monthlyCo2 / PETROL_CO2_PER_LITRE.value);
-  const treesEq = Number((monthlyCo2 / TREE_ABSORPTION_KG_CO2_YEAR.value).toFixed(1));
-  const monthlyNox = Math.round(cleanFamilies * monthlyTripsPerFamily * noxSavedPerTrip);
+  const monthlyCo2Kg = Math.round(monthlySwaps * avgRoundTripKm * CO2_PER_KM.value.solo_car);
+  const monthlyPetrolLitres = Math.round(monthlyCo2Kg / PETROL_CO2_PER_LITRE.value);
+  const monthlyTreesEquiv = Math.round(monthlyCo2Kg / TREE_ABSORPTION_KG_CO2_MONTH.value);
+  const monthlyNoxGrams = Math.round(monthlySwaps * avgRoundTripKm * NOX_PER_KM.value.solo_car);
 
   return {
     families: cleanFamilies,
     daysPerWeek: cleanDays,
-    monthlyCo2Kg: monthlyCo2,
-    monthlyPetrolLitres: monthlyPetrol,
-    treesAnnualEquivalent: treesEq,
-    monthlyNoxGrams: monthlyNox,
-    confidence: 'medium',
+    monthlyCo2Kg,
+    monthlyPetrolLitres,
+    monthlyTreesEquiv,
+    monthlyNoxGrams,
+    confidence: 'low',
     isEstimate: true,
     methodologyNote:
       'Rough estimate based on swapping 1 solo car trip for clean transit/carpool per pledged family.',

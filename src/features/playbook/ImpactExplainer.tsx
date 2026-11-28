@@ -4,6 +4,7 @@ import React from 'react';
 import { BarChart3, HeartPulse } from 'lucide-react';
 import type { CalculatedImpact } from '@/domain/scenarios';
 import type { PlaybookData } from '@/domain/playbookEngine';
+import { PM25_PER_CIGARETTE } from '@/domain/emissions';
 
 interface ImpactExplainerProps {
   playbook: PlaybookData;
@@ -66,8 +67,9 @@ export function ImpactExplainer({ playbook, impact }: ImpactExplainerProps) {
               reductions capped by purifier/sealing setup.
             </li>
             <li>
-              <strong>Source:</strong> Berkeley Earth cigarette equivalent (PM2.5 &divide; 22), CPCB
-              NAQI breakpoints, WHO / EPA indoor filtration &amp; wet-cleaning studies.
+              <strong>Source:</strong> Berkeley Earth cigarette equivalent (PM2.5 &divide;{' '}
+              {PM25_PER_CIGARETTE.value}), CPCB NAQI breakpoints, WHO / EPA indoor filtration &amp;
+              wet-cleaning studies.
             </li>
             <li>
               <strong>Confidence:</strong> Medium (varies by room volume, sealing, and outdoor

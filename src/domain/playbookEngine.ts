@@ -3,6 +3,7 @@
 
 import type { LocationScenario, HouseholdProfile, CalculatedImpact } from './scenarios';
 import type { VentilationWindow } from './naqi';
+import { COMMUTE_BASELINE_CO2_KG, NOX_PER_KM } from './emissions';
 
 export interface PlaybookItem {
   id: string;
@@ -124,7 +125,7 @@ function buildEmissionSwaps(
     swaps.push({
       id: 'swap-1',
       title: `Take Metro / Bus or Carpool for Your ${impact.km} km Commute`,
-      detail: `Skipping a solo car cuts ${impact.commuteCo2Kg} kg CO₂ and keeps ~${Math.round(impact.km * 0.65)}g NOx out of smog. Wear an N95 for the last-mile walk.`,
+      detail: `Skipping a solo car cuts ${impact.commuteCo2Kg} kg CO₂ and keeps ~${Math.round(impact.km * NOX_PER_KM.value.solo_car)}g NOx out of smog. Wear an N95 for the last-mile walk.`,
       tag: `-${impact.commuteCo2Kg} kg CO₂`,
       exposurePct: 0,
       co2Kg: impact.commuteCo2Kg,
@@ -139,24 +140,26 @@ function buildEmissionSwaps(
       co2Kg: impact.commuteCo2Kg,
     });
   } else if (profile.commuteMode === 'public_transit') {
+    const transitCo2 = COMMUTE_BASELINE_CO2_KG.value.public_transit;
     swaps.push({
       id: 'swap-1',
       title: 'Keep Metro/Bus Routine & Walk/E-Rickshaw Last Mile',
       detail:
         'Your transit choice avoids over 2 kg CO₂ vs driving. Choose an electric e-rickshaw over diesel autos.',
-      tag: '-0.65 kg CO₂',
+      tag: `-${transitCo2} kg CO₂`,
       exposurePct: 0,
-      co2Kg: 0.65,
+      co2Kg: transitCo2,
     });
   } else {
+    const wfhCo2 = COMMUTE_BASELINE_CO2_KG.value.wfh;
     swaps.push({
       id: 'swap-1',
       title: 'Zero-Idling WFH Day + Batched Grocery Orders',
       detail:
         'Avoid short cold-engine runs. Combine errands into one afternoon trip during solar dispersion.',
-      tag: '-0.85 kg CO₂',
+      tag: `-${wfhCo2} kg CO₂`,
       exposurePct: 0,
-      co2Kg: 0.85,
+      co2Kg: wfhCo2,
     });
   }
 

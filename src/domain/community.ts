@@ -6,7 +6,7 @@ import {
   CO2_PER_KM,
   NOX_PER_KM,
   PETROL_CO2_PER_LITRE,
-  TREE_ABSORPTION_KG_CO2_YEAR,
+  TREE_ABSORPTION_KG_CO2_MONTH,
   WEEKS_PER_MONTH,
 } from './emissions';
 
@@ -60,7 +60,7 @@ export function calculateColonyProjection(
 
   const monthlyCo2 = Math.round(safeFamilies * monthlyRuns * co2PerTrip);
   const monthlyPetrol = Math.round(monthlyCo2 / PETROL_CO2_PER_LITRE.value);
-  const annualTrees = Number((monthlyCo2 / TREE_ABSORPTION_KG_CO2_YEAR.value).toFixed(1));
+  const annualTrees = Number((monthlyCo2 / (TREE_ABSORPTION_KG_CO2_MONTH.value * 12)).toFixed(1));
   const monthlyNox = Math.round(safeFamilies * monthlyRuns * noxPerTrip);
 
   return {

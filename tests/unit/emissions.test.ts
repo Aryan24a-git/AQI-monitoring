@@ -1,14 +1,13 @@
-// Unit tests for emissions constants & simulator (REQ-016, REQ-020)
+// Unit tests for unified emissions & impact constants (REQ-016, REQ-020)
 import { describe, it, expect } from 'vitest';
 import {
   CO2_PER_KM,
   NOX_PER_KM,
   PETROL_CO2_PER_LITRE,
-  TREE_ABSORPTION_KG_CO2_YEAR,
-  computeDeterministicImpact,
+  TREE_ABSORPTION_KG_CO2_MONTH,
+  WEEKS_PER_MONTH,
   simulateColonyImpact,
 } from '../../src/domain/emissions';
-import { calculateCPCBNAQI } from '../../src/domain/naqi';
 import { lowestPm25Window } from '../../src/domain/forecast';
 import {
   SCENARIOS,
@@ -16,39 +15,26 @@ import {
 } from '../../src/domain/scenarios';
 
 describe('Emissions & Impact Model', () => {
-  it('has documented sources and estimates for transport factors', () => {
+  it('has documented sources and honest confidence for transport factors', () => {
     expect(CO2_PER_KM.sourceNote).toBeDefined();
-    expect(CO2_PER_KM.value.solo_car).toBe(0.18);
-    expect(CO2_PER_KM.value.public_transit).toBe(0.025);
+    expect(CO2_PER_KM.value.solo_car).toBe(0.136);
+    expect(CO2_PER_KM.value.two_wheeler).toBe(0.037);
+    expect(CO2_PER_KM.confidence).toBe('low');
+    expect(CO2_PER_KM.isEstimate).toBe(true);
+    expect(NOX_PER_KM.value.solo_car).toBe(0.65);
     expect(NOX_PER_KM.isEstimate).toBe(true);
     expect(PETROL_CO2_PER_LITRE.value).toBe(2.31);
-    expect(TREE_ABSORPTION_KG_CO2_YEAR.value).toBe(22.0);
+    expect(TREE_ABSORPTION_KG_CO2_MONTH.value).toBe(1.75);
+    expect(WEEKS_PER_MONTH.value).toBe(4.3);
   });
 
-  it('computes deterministic impact accurately for household profile', () => {
-    const aqi = calculateCPCBNAQI(220, 310, 60);
-    const profile = {
-      vulnerabilities: ['kids' as const],
-      purifier: 'one_room' as const,
-      kitchenExhaust: true,
-      commuteMode: 'solo_car' as const,
-      commuteKm: 20,
-      budgetTier: 'diy_2000' as const,
-    };
-
-    const impact = computeDeterministicImpact(profile, aqi);
-    expect(impact.exposureReductionPercent).toBeGreaterThan(50);
-    expect(impact.cigsAvoidedPerDay).toBeGreaterThan(0);
-    expect(impact.monthlyCo2SavedKg).toBeCloseTo(20 * 0.18 * 22, 1);
-    expect(impact.isEstimate).toBe(true);
-  });
-
-  it('simulates colony impact without fabricated certainty', () => {
-    const sim = simulateColonyImpact(100, 2, 16);
-    expect(sim.families).toBe(100);
-    expect(sim.daysPerWeek).toBe(2);
-    expect(sim.monthlyCo2Kg).toBeGreaterThan(0);
-    expect(sim.monthlyPetrolLitres).toBeGreaterThan(0);
+  it('simulates colony impact matching UI calculations', () => {
+    const sim = simulateColonyImpact(120, 4, 16);
+    expect(sim.families).toBe(120);
+    expect(sim.daysPerWeek).toBe(4);
+    expect(sim.monthlyCo2Kg).toBe(Math.round(120 * 4 * 4.3 * 16 * 0.136));
+    expect(sim.monthlyPetrolLitres).toBe(Math.round(sim.monthlyCo2Kg / 2.31));
+    expect(sim.monthlyTreesEquiv).toBe(Math.round(sim.monthlyCo2Kg / 1.75));
     expect(sim.methodologyNote).toContain('Rough estimate');
     expect(sim.isEstimate).toBe(true);
   });
@@ -69,6 +55,20 @@ describe('Emissions & Impact Model', () => {
     expect(res?.startIndex).toBe(1);
     expect(res?.minPm25).toBe(80);
     expect(res?.startTime).toBe('11:00');
+  });
+
+  it('preserves commuteKm=0 for non-wfh modes instead of defaulting to 16', () => {
+    const loc = SCENARIOS.delhi;
+    const zeroKm = computeScenarioImpact(loc, {
+      vulnerabilities: ['none'],
+      purifier: 'none',
+      kitchenExhaust: false,
+      commuteMode: 'solo_car',
+      commuteKm: 0,
+      budgetTier: 'zero_cost',
+    });
+    expect(zeroKm.km).toBe(0);
+    expect(zeroKm.commuteCo2Kg).toBe(0);
   });
 
   it('computes scenario impact for public_transit, wfh, and whole_home purifier', () => {
