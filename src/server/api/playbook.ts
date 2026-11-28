@@ -3,14 +3,10 @@ import { z } from 'zod';
 import { buildDeterministicPlaybook, type PlaybookData } from '@/domain/playbookEngine';
 import { computeDeterministicImpact, type LocationScenario } from '@/domain/scenarios';
 import { findSafeVentilationWindow } from '@/domain/naqi';
-import { getRequestId, REQUEST_ID_HEADER } from '@/server/http/requestId';
-import {
-  MemoryBucketStore,
-  TokenBucketLimiter,
-  getHashedClientKey,
-} from '@/server/security/rateLimit';
-import { RATE_LIMITS, readJsonBoundary } from '@/server/security/limits';
-import { apiErrorResponse, securityJson } from '@/server/security/response';
+import { REQUEST_ID_HEADER } from '@/server/http/requestId';
+import { createRateLimiter, withJsonGuard } from '@/server/http/withApiGuards';
+import { RATE_LIMITS } from '@/server/security/limits';
+import { securityJson } from '@/server/security/response';
 import { AI_PROVIDER_LABEL, createLlmClient, stripMarkdownCodeFences } from '@/server/llm/client';
 import {
   areNumbersGrounded,
@@ -18,11 +14,7 @@ import {
   extractStandaloneNumbers,
 } from '@/server/llm/guardrails';
 
-const limiter = new TokenBucketLimiter(
-  RATE_LIMITS.playbookPerMinute,
-  60_000,
-  new MemoryBucketStore()
-);
+const limiter = createRateLimiter(RATE_LIMITS.playbookPerMinute);
 
 function stripControlChars(value: string): string {
   return value.replace(/[\u0000-\u001F\u007F]/g, '').trim();
@@ -159,43 +151,25 @@ async function enhancePlaybookWithAi(
 }
 
 export async function handlePlaybook(req: NextRequest) {
-  const requestId = getRequestId(req);
-  const limit = limiter.check(getHashedClientKey(req));
-  if (!limit.allowed) return rateLimited(requestId, limit.retryAfterSeconds);
+  return withJsonGuard(req, limiter, PlaybookRequestSchema, async ({ requestId, body }) => {
+    const { location, profile, aiConsent } = body;
+    const vent =
+      location.hourlyPM25.length === 24 && location.hourlyWind.length === 24
+        ? findSafeVentilationWindow(location.hourlyPM25, location.hourlyWind)
+        : null;
+    const impact = computeDeterministicImpact(location, profile);
+    const playbook = buildDeterministicPlaybook(location, profile, vent, impact);
+    const source = aiConsent ? await enhancePlaybookWithAi(playbook, location, profile) : 'basic';
 
-  const parsed = await readJsonBoundary(req, PlaybookRequestSchema, requestId);
-  if (!parsed.ok) return apiErrorResponse(parsed.error, parsed.status);
-
-  const { location, profile, aiConsent } = parsed.value;
-  const vent =
-    location.hourlyPM25.length === 24 && location.hourlyWind.length === 24
-      ? findSafeVentilationWindow(location.hourlyPM25, location.hourlyWind)
-      : null;
-  const impact = computeDeterministicImpact(location, profile);
-  const playbook = buildDeterministicPlaybook(location, profile, vent, impact);
-  const source = aiConsent ? await enhancePlaybookWithAi(playbook, location, profile) : 'basic';
-
-  return securityJson(
-    {
-      playbook,
-      source,
-      sourceLabel: source === 'ai' ? AI_PROVIDER_LABEL : 'Smart Local Engine (Basic mode)',
-      generatedAt: new Date().toISOString(),
-    },
-    200,
-    { [REQUEST_ID_HEADER]: requestId }
-  );
-}
-
-function rateLimited(requestId: string, seconds: number) {
-  return apiErrorResponse(
-    {
-      code: 'RATE_LIMITED',
-      message: 'Rate limit exceeded',
-      requestId,
-      timestamp: new Date().toISOString(),
-    },
-    429,
-    { 'Retry-After': String(seconds) }
-  );
+    return securityJson(
+      {
+        playbook,
+        source,
+        sourceLabel: source === 'ai' ? AI_PROVIDER_LABEL : 'Smart Local Engine (Basic mode)',
+        generatedAt: new Date().toISOString(),
+      },
+      200,
+      { [REQUEST_ID_HEADER]: requestId }
+    );
+  });
 }

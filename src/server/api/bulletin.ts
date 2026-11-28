@@ -2,20 +2,12 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { formatWhatsAppBulletin } from '@/domain/bulletinTemplate';
 import { AI_PROVIDER_LABEL, createLlmClient } from '@/server/llm/client';
-import { getRequestId, REQUEST_ID_HEADER } from '@/server/http/requestId';
-import {
-  MemoryBucketStore,
-  TokenBucketLimiter,
-  getHashedClientKey,
-} from '@/server/security/rateLimit';
-import { RATE_LIMITS, readJsonBoundary } from '@/server/security/limits';
-import { apiErrorResponse, securityJson } from '@/server/security/response';
+import { REQUEST_ID_HEADER } from '@/server/http/requestId';
+import { createRateLimiter, withJsonGuard } from '@/server/http/withApiGuards';
+import { RATE_LIMITS } from '@/server/security/limits';
+import { securityJson } from '@/server/security/response';
 
-const limiter = new TokenBucketLimiter(
-  RATE_LIMITS.bulletinPerMinute,
-  60_000,
-  new MemoryBucketStore()
-);
+const limiter = createRateLimiter(RATE_LIMITS.bulletinPerMinute);
 
 const BulletinRequestSchema = z.object({
   lang: z.enum(['en', 'hi']),
@@ -33,59 +25,40 @@ const BulletinRequestSchema = z.object({
 });
 
 export async function handleBulletin(req: NextRequest) {
-  const requestId = getRequestId(req);
-  const limit = limiter.check(getHashedClientKey(req));
-  if (!limit.allowed) return rateLimited(requestId, limit.retryAfterSeconds);
+  return withJsonGuard(req, limiter, BulletinRequestSchema, async ({ requestId, body }) => {
+    const fallbackText = formatWhatsAppBulletin(body);
+    let bulletinText = fallbackText;
+    let source: 'ai' | 'basic' = 'basic';
 
-  const parsed = await readJsonBoundary(req, BulletinRequestSchema, requestId);
-  if (!parsed.ok) return apiErrorResponse(parsed.error, parsed.status);
-
-  const fallbackText = formatWhatsAppBulletin(parsed.value);
-  let bulletinText = fallbackText;
-  let source: 'ai' | 'basic' = 'basic';
-
-  if (parsed.value.aiConsent) {
-    const v = parsed.value;
-    const langInstruction =
-      v.lang === 'hi'
-        ? 'Write in natural, clear Hindi (Devanagari script).'
-        : 'Write in clear, concise English.';
-    const windSystemNote = v.wind != null ? `wind speed (${v.wind} km/h), ` : '';
-    const windPromptNote = v.wind != null ? `Wind: ${v.wind} km/h, ` : '';
-    const aiText = await createLlmClient().complete({
-      system: `Write a fresh, neighborly WhatsApp RWA air-quality bulletin using WhatsApp *bold* formatting and emojis. ${langInstruction} Include the exact CPCB NAQI, PM2.5, safe ventilation window, seal time, ${windSystemNote}and 2 practical community actions (no leaf burning, low-emission commute/wet mopping). Keep under 900 characters. Zero medical claims, no URLs.`,
-      prompt: `Society: ${v.rwaName || v.shortCity + ' RWA'}, City: ${v.city}, NAQI: ${v.naqi} (${v.bandLabel}), PM2.5: ${v.pm25} µg/m³, Cigs eq: ${v.cigsPerDay}/day, ${windPromptNote}Safe Window: ${v.windowLabel}, Seal By: ${v.sealLabel}.`,
-      maxTokens: 800,
-      timeoutMs: 12_000,
-    });
-    if (aiText && aiText.trim().length >= 60 && !/https?:\/\/|<[^>]+>/.test(aiText)) {
-      bulletinText = aiText.trim();
-      source = 'ai';
+    if (body.aiConsent) {
+      const langInstruction =
+        body.lang === 'hi'
+          ? 'Write in natural, clear Hindi (Devanagari script).'
+          : 'Write in clear, concise English.';
+      const windSystemNote = body.wind != null ? `wind speed (${body.wind} km/h), ` : '';
+      const windPromptNote = body.wind != null ? `Wind: ${body.wind} km/h, ` : '';
+      const aiText = await createLlmClient().complete({
+        system: `Write a fresh, neighborly WhatsApp RWA air-quality bulletin using WhatsApp *bold* formatting and emojis. ${langInstruction} Include the exact CPCB NAQI, PM2.5, safe ventilation window, seal time, ${windSystemNote}and 2 practical community actions (no leaf burning, low-emission commute/wet mopping). Keep under 900 characters. Zero medical claims, no URLs.`,
+        prompt: `Society: ${body.rwaName || body.shortCity + ' RWA'}, City: ${body.city}, NAQI: ${body.naqi} (${body.bandLabel}), PM2.5: ${body.pm25} µg/m³, Cigs eq: ${body.cigsPerDay}/day, ${windPromptNote}Safe Window: ${body.windowLabel}, Seal By: ${body.sealLabel}.`,
+        maxTokens: 800,
+        timeoutMs: 12_000,
+      });
+      if (aiText && aiText.trim().length >= 60 && !/https?:\/\/|<[^>]+>/.test(aiText)) {
+        bulletinText = aiText.trim();
+        source = 'ai';
+      }
     }
-  }
 
-  return securityJson(
-    {
-      bulletinText,
-      lang: parsed.value.lang,
-      source,
-      sourceLabel: source === 'ai' ? AI_PROVIDER_LABEL : 'VayuSaathi Community Advisory Engine',
-      generatedAt: new Date().toISOString(),
-    },
-    200,
-    { [REQUEST_ID_HEADER]: requestId }
-  );
-}
-
-function rateLimited(requestId: string, seconds: number) {
-  return apiErrorResponse(
-    {
-      code: 'RATE_LIMITED',
-      message: 'Rate limit exceeded',
-      requestId,
-      timestamp: new Date().toISOString(),
-    },
-    429,
-    { 'Retry-After': String(seconds) }
-  );
+    return securityJson(
+      {
+        bulletinText,
+        lang: body.lang,
+        source,
+        sourceLabel: source === 'ai' ? AI_PROVIDER_LABEL : 'VayuSaathi Community Advisory Engine',
+        generatedAt: new Date().toISOString(),
+      },
+      200,
+      { [REQUEST_ID_HEADER]: requestId }
+    );
+  });
 }

@@ -3,12 +3,7 @@ import { findBandByPm25 } from '../../domain/bands';
 import type { AirQualitySnapshot } from '../../domain/types';
 import { logger } from '../logging/logger';
 import { LruCache, RequestCoalescer } from '../cache/lru';
-import {
-  CircuitBreaker,
-  ProviderError,
-  retryWithBackoff,
-  fetchWithTimeout,
-} from '../http/resilience';
+import { CircuitBreaker, ProviderError, fetchValidatedJson } from '../http/resilience';
 import type { AirQualityProvider, ForecastReading } from './airQuality';
 
 const ResponseSchema = z.object({
@@ -96,27 +91,12 @@ async function loadSnapshot(
 ): Promise<AirQualitySnapshot> {
   try {
     const url = buildSnapshotUrl(rounded.lat, rounded.lon);
-    const response = await retryWithBackoff(() => fetchWithTimeout(url, 4_000, fetchImpl), {
-      timeoutMs: 4_000,
-      maxRetries: 2,
-      baseDelayMs: 200,
-      fetchImpl,
-    });
-    if (!response.ok) throw new ProviderError('HTTP_ERROR', `Upstream returned ${response.status}`);
-    return parseSnapshot(await readJson(response));
+    return await fetchValidatedJson(url, parseSnapshot, { timeoutMs: 4_000, fetchImpl });
   } catch (error) {
     logger.warn({ counter: 'providerFailure', provider: 'air-quality' }, 'providerFailure');
     throw error instanceof ProviderError
       ? error
       : new ProviderError('NETWORK_ERROR', 'Air quality provider failed', error);
-  }
-}
-
-async function readJson(response: Response): Promise<unknown> {
-  try {
-    return await response.json();
-  } catch (error) {
-    throw new ProviderError('SCHEMA_ERROR', 'Upstream returned malformed JSON', error);
   }
 }
 
@@ -155,27 +135,21 @@ export async function fetchOpenMeteoForecast(
   url.searchParams.set('hourly', 'pm2_5,us_aqi');
   url.searchParams.set('forecast_days', '7');
   try {
-    const response = await retryWithBackoff(() => fetchWithTimeout(url, 4_000, fetchImpl), {
-      timeoutMs: 4_000,
-      maxRetries: 2,
-      baseDelayMs: 200,
-      fetchImpl,
-    });
-    if (!response.ok) throw new ProviderError('HTTP_ERROR', `Upstream returned ${response.status}`);
-    let raw: unknown;
-    try {
-      raw = await response.json();
-    } catch (error) {
-      throw new ProviderError('SCHEMA_ERROR', 'Upstream returned malformed JSON', error);
-    }
-    const parsed = ResponseSchema.safeParse(raw);
-    if (!parsed.success)
-      throw new ProviderError('SCHEMA_ERROR', 'Upstream response did not match schema');
-    return parsed.data.hourly.time.slice(0, hours).map((time, index) => ({
-      time,
-      pm25: parsed.data.hourly.pm2_5[index] ?? 0,
-      aqi: parsed.data.hourly.us_aqi[index] ?? 0,
-    }));
+    return await fetchValidatedJson(
+      url,
+      (raw) => {
+        const parsed = ResponseSchema.safeParse(raw);
+        if (!parsed.success) {
+          throw new ProviderError('SCHEMA_ERROR', 'Upstream response did not match schema');
+        }
+        return parsed.data.hourly.time.slice(0, hours).map((time, index) => ({
+          time,
+          pm25: parsed.data.hourly.pm2_5[index] ?? 0,
+          aqi: parsed.data.hourly.us_aqi[index] ?? 0,
+        }));
+      },
+      { timeoutMs: 4_000, fetchImpl }
+    );
   } catch (error) {
     logger.warn(
       {

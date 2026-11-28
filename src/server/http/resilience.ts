@@ -124,3 +124,34 @@ export class CircuitBreaker {
     this.openedAt = 0;
   }
 }
+
+export async function fetchValidatedJson<T>(
+  url: URL | string,
+  parse: (raw: unknown) => T,
+  options: {
+    timeoutMs?: number;
+    maxRetries?: number;
+    baseDelayMs?: number;
+    fetchImpl?: typeof fetch;
+  }
+): Promise<T> {
+  const timeoutMs = options.timeoutMs ?? 4_000;
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const targetUrl = typeof url === 'string' ? new URL(url) : url;
+  const response = await retryWithBackoff(() => fetchWithTimeout(targetUrl, timeoutMs, fetchImpl), {
+    timeoutMs,
+    maxRetries: options.maxRetries ?? 2,
+    baseDelayMs: options.baseDelayMs ?? 200,
+    fetchImpl,
+  });
+  if (!response.ok) {
+    throw new ProviderError('HTTP_ERROR', `Upstream returned ${response.status}`);
+  }
+  let raw: unknown;
+  try {
+    raw = await response.json();
+  } catch (error) {
+    throw new ProviderError('SCHEMA_ERROR', 'Upstream returned malformed JSON', error);
+  }
+  return parse(raw);
+}

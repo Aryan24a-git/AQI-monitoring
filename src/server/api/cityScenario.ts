@@ -2,12 +2,8 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import type { LocationScenario } from '@/domain/scenarios';
 import { searchOpenMeteo } from '@/server/providers/geocoding';
-import { getRequestId, REQUEST_ID_HEADER } from '@/server/http/requestId';
-import {
-  MemoryBucketStore,
-  TokenBucketLimiter,
-  getHashedClientKey,
-} from '@/server/security/rateLimit';
+import { REQUEST_ID_HEADER } from '@/server/http/requestId';
+import { createRateLimiter, withRateLimit } from '@/server/http/withApiGuards';
 import { boundaryError, MAX_QUERY_LENGTH, RATE_LIMITS } from '@/server/security/limits';
 import { apiErrorResponse, securityJson } from '@/server/security/response';
 import { LruCache } from '@/server/cache/lru';
@@ -15,11 +11,7 @@ import { getEnv } from '@/server/config/env';
 import { fetchWaqiStation, validateWaqiReading } from '@/server/providers/waqiAirQuality';
 import { buildCombinedScenario, buildWaqiScenario, type MeteoPayload } from './cityScenarioBuilder';
 
-const limiter = new TokenBucketLimiter(
-  RATE_LIMITS.cityScenarioPerMinute,
-  60_000,
-  new MemoryBucketStore()
-);
+const limiter = createRateLimiter(RATE_LIMITS.cityScenarioPerMinute);
 const scenarioCache = new LruCache<string, LocationScenario>({
   maxEntries: 100,
   ttlMs: 15 * 60 * 1000,
@@ -75,68 +67,55 @@ async function resolveLiveScenario(
 }
 
 export async function handleCityScenario(req: NextRequest) {
-  const requestId = getRequestId(req);
-  const limit = limiter.check(getHashedClientKey(req));
-  if (!limit.allowed) {
-    return apiErrorResponse(
-      {
-        code: 'RATE_LIMITED',
-        message: 'Too many requests. Please wait before retrying.',
-        requestId,
-        timestamp: new Date().toISOString(),
-      },
-      429,
-      { 'Retry-After': String(limit.retryAfterSeconds) }
-    );
-  }
-
-  const query = req.nextUrl.searchParams.get('q');
-  const parsed = QuerySchema.safeParse({ q: query ?? '' });
-  if (!parsed.success) {
-    return apiErrorResponse(
-      boundaryError(
-        'VALIDATION_ERROR',
-        'City query parameter "q" must be 2 to 100 characters',
-        requestId,
+  return withRateLimit(req, limiter, async ({ requestId }) => {
+    const query = req.nextUrl.searchParams.get('q');
+    const parsed = QuerySchema.safeParse({ q: query ?? '' });
+    if (!parsed.success) {
+      return apiErrorResponse(
+        boundaryError(
+          'VALIDATION_ERROR',
+          'City query parameter "q" must be 2 to 100 characters',
+          requestId,
+          400
+        ).error,
         400
-      ).error,
-      400
-    );
-  }
+      );
+    }
 
-  const q = parsed.data.q.toLowerCase().trim();
-  const cacheKey = `${getEnv().AQ_PROVIDER}:${q}`;
-  const cached = scenarioCache.get(cacheKey);
-  if (cached) return securityJson(cached, 200, { [REQUEST_ID_HEADER]: requestId });
+    const q = parsed.data.q.toLowerCase().trim();
+    const cacheKey = `${getEnv().AQ_PROVIDER}:${q}`;
+    const cached = scenarioCache.get(cacheKey);
+    if (cached) return securityJson(cached, 200, { [REQUEST_ID_HEADER]: requestId });
 
-  const geoRes = await searchOpenMeteo(q).catch(() => []);
-  if (!geoRes || geoRes.length === 0) {
-    return apiErrorResponse(
-      {
-        code: 'NOT_FOUND',
-        message: `City "${parsed.data.q}" not found in geocoding database`,
-        requestId,
-        timestamp: new Date().toISOString(),
-      },
-      404
-    );
-  }
+    const geoRes = await searchOpenMeteo(q).catch(() => []);
+    if (!geoRes || geoRes.length === 0) {
+      return apiErrorResponse(
+        {
+          code: 'NOT_FOUND',
+          message: `City "${parsed.data.q}" not found in geocoding database`,
+          requestId,
+          timestamp: new Date().toISOString(),
+        },
+        404
+      );
+    }
 
-  const top = geoRes[0];
-  const scenario = await resolveLiveScenario(top.name, top.admin1, top.latitude, top.longitude);
-  if (!scenario) {
-    return apiErrorResponse(
-      {
-        code: 'PROVIDER_UNAVAILABLE',
-        message:
-          'Live air quality provider temporarily unavailable. Please retry or enter AQI manually.',
-        requestId,
-        timestamp: new Date().toISOString(),
-      },
-      502
-    );
-  }
+    const top = geoRes[0];
+    const scenario = await resolveLiveScenario(top.name, top.admin1, top.latitude, top.longitude);
+    if (!scenario) {
+      return apiErrorResponse(
+        {
+          code: 'PROVIDER_UNAVAILABLE',
+          message:
+            'Live air quality provider temporarily unavailable. Please retry or enter AQI manually.',
+          requestId,
+          timestamp: new Date().toISOString(),
+        },
+        502
+      );
+    }
 
-  scenarioCache.set(cacheKey, scenario);
-  return securityJson(scenario, 200, { [REQUEST_ID_HEADER]: requestId });
+    scenarioCache.set(cacheKey, scenario);
+    return securityJson(scenario, 200, { [REQUEST_ID_HEADER]: requestId });
+  });
 }

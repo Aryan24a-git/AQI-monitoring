@@ -4,16 +4,13 @@ import { createDefaultProfile, ProfileSchema } from '@/domain/profile';
 import { buildBasicPlan } from '@/domain/plan';
 import { ask } from '@/server/llm/ask';
 import { createLlmClient, NullClient } from '@/server/llm/client';
-import { getRequestId, REQUEST_ID_HEADER } from '@/server/http/requestId';
-import {
-  MemoryBucketStore,
-  TokenBucketLimiter,
-  getHashedClientKey,
-} from '@/server/security/rateLimit';
-import { RATE_LIMITS, readJsonBoundary, MAX_QUESTION_LENGTH } from '@/server/security/limits';
-import { apiErrorResponse, securityJson } from '@/server/security/response';
+import { REQUEST_ID_HEADER } from '@/server/http/requestId';
+import { createRateLimiter, withJsonGuard } from '@/server/http/withApiGuards';
+import { RATE_LIMITS, MAX_QUESTION_LENGTH } from '@/server/security/limits';
+import { securityJson } from '@/server/security/response';
 
-const limiter = new TokenBucketLimiter(RATE_LIMITS.askPerMinute, 60_000, new MemoryBucketStore());
+const limiter = createRateLimiter(RATE_LIMITS.askPerMinute);
+
 const RequestSchema = z.object({
   question: z.string().trim().min(3).max(MAX_QUESTION_LENGTH),
   profile: ProfileSchema.optional(),
@@ -23,43 +20,27 @@ const RequestSchema = z.object({
 });
 
 export async function handleAsk(req: NextRequest) {
-  const requestId = getRequestId(req);
-  const limit = limiter.check(getHashedClientKey(req));
-  if (!limit.allowed) return rateLimited(requestId, limit.retryAfterSeconds);
-  const parsed = await readJsonBoundary(req, RequestSchema, requestId);
-  if (!parsed.ok) return apiErrorResponse(parsed.error, parsed.status);
-  const now = new Date();
-  const profile = parsed.value.profile ?? createDefaultProfile();
-  const snapshot = {
-    aqi: parsed.value.aqi ?? 175,
-    pm25: parsed.value.pm25 ?? 72,
-    timestamp: now.toISOString(),
-    provider: 'Basic context',
-    isStale: false,
-    isFallback: false,
-  };
-  const plan = buildBasicPlan(profile, snapshot, now);
-  const client = parsed.value.aiConsent ? createLlmClient() : new NullClient();
-  const answer = await ask(parsed.value.question, profile, plan, client);
-  if (!parsed.value.aiConsent && answer.source === 'basic') {
-    return securityJson(
-      { ...answer, fallbackReason: answer.fallbackReason ?? 'consent_not_granted' },
-      200,
-      { [REQUEST_ID_HEADER]: requestId }
-    );
-  }
-  return securityJson(answer, 200, { [REQUEST_ID_HEADER]: requestId });
-}
-
-function rateLimited(requestId: string, seconds: number) {
-  return apiErrorResponse(
-    {
-      code: 'RATE_LIMITED',
-      message: 'Rate limit exceeded',
-      requestId,
-      timestamp: new Date().toISOString(),
-    },
-    429,
-    { 'Retry-After': String(seconds) }
-  );
+  return withJsonGuard(req, limiter, RequestSchema, async ({ requestId, body }) => {
+    const now = new Date();
+    const profile = body.profile ?? createDefaultProfile();
+    const snapshot = {
+      aqi: body.aqi ?? 175,
+      pm25: body.pm25 ?? 72,
+      timestamp: now.toISOString(),
+      provider: 'Basic context',
+      isStale: false,
+      isFallback: false,
+    };
+    const plan = buildBasicPlan(profile, snapshot, now);
+    const client = body.aiConsent ? createLlmClient() : new NullClient();
+    const answer = await ask(body.question, profile, plan, client);
+    if (!body.aiConsent && answer.source === 'basic') {
+      return securityJson(
+        { ...answer, fallbackReason: answer.fallbackReason ?? 'consent_not_granted' },
+        200,
+        { [REQUEST_ID_HEADER]: requestId }
+      );
+    }
+    return securityJson(answer, 200, { [REQUEST_ID_HEADER]: requestId });
+  });
 }

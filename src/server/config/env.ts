@@ -4,21 +4,16 @@
 
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
-import { RATE_LIMITS } from '../security/limits';
 
 export const DEFAULT_GROQ_MODEL = 'openai/gpt-oss-120b';
 
 export const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
-  APP_ORIGIN: z.string().default('http://localhost:3000'),
 
   AQ_PROVIDER: z.string().default('waqi'),
   WAQI_API_TOKEN: z.string().min(1).optional(),
 
-  RATE_LIMIT_PLAN: z.coerce.number().int().positive().default(RATE_LIMITS.planPerMinute),
-  RATE_LIMIT_AQI: z.coerce.number().int().positive().default(RATE_LIMITS.airQualityPerMinute),
-  RATE_LIMIT_GEOCODE: z.coerce.number().int().positive().default(RATE_LIMITS.geocodePerMinute),
   TRUSTED_PROXY_HEADER: z.string().min(1).max(100).optional(),
   CLIENT_IP_SALT: z.string().min(16).default(randomUUID()),
 
@@ -30,7 +25,6 @@ export const EnvSchema = z.object({
     .transform((val) => val === 'true' || val === '1')
     .or(z.boolean())
     .default(true),
-  LLM_DAILY_CALL_CAP: z.coerce.number().int().positive().default(1000),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

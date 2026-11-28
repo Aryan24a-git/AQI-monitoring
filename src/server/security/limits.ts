@@ -11,13 +11,10 @@ export const BODY_LIMITS = {
 
 /** Single authoritative per-IP per-minute rate limits table (API.md & SECURITY_AUDIT.md). */
 export const RATE_LIMITS = {
-  planPerMinute: 6,
-  planNarratePerMinute: 6,
   playbookPerMinute: 15,
   askPerMinute: 8,
   bulletinPerMinute: 10,
   cityScenarioPerMinute: 30,
-  geocodePerMinute: 30,
   airQualityPerMinute: 30,
 } as const;
 

@@ -1,12 +1,7 @@
 import { z } from 'zod';
 import { logger } from '../logging/logger';
 import { LruCache, RequestCoalescer } from '../cache/lru';
-import {
-  CircuitBreaker,
-  ProviderError,
-  fetchWithTimeout,
-  retryWithBackoff,
-} from '../http/resilience';
+import { CircuitBreaker, ProviderError, fetchValidatedJson } from '../http/resilience';
 
 const ResultSchema = z.object({
   id: z.number(),
@@ -67,24 +62,17 @@ export async function searchOpenMeteo(
         url.searchParams.set('count', '5');
         url.searchParams.set('language', 'en');
         url.searchParams.set('format', 'json');
-        const response = await retryWithBackoff(() => fetchWithTimeout(url, 3_000, fetchImpl), {
-          timeoutMs: 3_000,
-          maxRetries: 2,
-          baseDelayMs: 200,
-          fetchImpl,
-        });
-        if (!response.ok)
-          throw new ProviderError('HTTP_ERROR', `Upstream returned ${response.status}`);
-        let raw: unknown;
-        try {
-          raw = await response.json();
-        } catch (error) {
-          throw new ProviderError('SCHEMA_ERROR', 'Upstream returned malformed JSON', error);
-        }
-        const parsed = ResponseSchema.safeParse(raw);
-        if (!parsed.success)
-          throw new ProviderError('SCHEMA_ERROR', 'Upstream response did not match schema');
-        const results = parsed.data.results ?? [];
+        const results = await fetchValidatedJson(
+          url,
+          (raw) => {
+            const parsed = ResponseSchema.safeParse(raw);
+            if (!parsed.success) {
+              throw new ProviderError('SCHEMA_ERROR', 'Upstream response did not match schema');
+            }
+            return parsed.data.results ?? [];
+          },
+          { timeoutMs: 3_000, fetchImpl }
+        );
         CACHE.set(key, results);
         return results;
       } catch (error) {

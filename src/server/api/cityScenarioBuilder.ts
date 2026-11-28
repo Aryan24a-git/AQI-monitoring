@@ -138,7 +138,6 @@ export function buildWaqiScenario(
   };
 }
 
-/** @testonly */
 export function buildCombinedScenario(
   city: string,
   admin1: string | undefined,
