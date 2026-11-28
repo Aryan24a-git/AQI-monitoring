@@ -66,7 +66,7 @@ describe('/api/city-scenario Endpoint', () => {
   });
 
   it('extractHourlySeries returns typed error when missing or shorter than 24 values (no padding)', async () => {
-    const { extractHourlySeries } = await import('../../src/server/api/cityScenario');
+    const { extractHourlySeries } = await import('../../src/server/api/cityScenarioBuilder');
     expect(extractHourlySeries(undefined)).toEqual({
       ok: false,
       error: 'HOURLY_DATA_UNAVAILABLE',

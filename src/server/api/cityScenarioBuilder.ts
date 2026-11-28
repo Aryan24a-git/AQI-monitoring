@@ -22,6 +22,7 @@ export interface MeteoPayload {
 export type HourlySeriesResult =
   { ok: true; series: number[] } | { ok: false; error: 'HOURLY_DATA_UNAVAILABLE'; message: string };
 
+/** @testonly */
 export function extractHourlySeries(
   raw: readonly (number | null | undefined)[] | undefined
 ): HourlySeriesResult {
@@ -137,6 +138,7 @@ export function buildWaqiScenario(
   };
 }
 
+/** @testonly */
 export function buildCombinedScenario(
   city: string,
   admin1: string | undefined,

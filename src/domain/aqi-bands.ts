@@ -131,6 +131,7 @@ export function classifyAqi(aqi: number): AqiBand {
 }
 
 /** Classify using PM2.5 µg/m³ when AQI is unavailable */
+/** @testonly */
 export function classifyPm25(pm25: number): AqiBand {
   const band = AQI_BANDS.find((b) => pm25 >= b.pm25Min && pm25 <= b.pm25Max);
   return band ?? AQI_BANDS[AQI_BANDS.length - 1]!;
@@ -140,6 +141,7 @@ export function classifyPm25(pm25: number): AqiBand {
  * Compute effective escalation level for a profile + AQI reading.
  * Vulnerable households get escalation applied earlier (D1).
  */
+/** @testonly */
 export function computeEffectiveEscalationLevel(baseBand: AqiBand, profile: Profile): number {
   if (!hasEarlyEscalationVulnerability(profile)) {
     return baseBand.escalationLevel;
@@ -157,11 +159,13 @@ export function getBandByEscalationLevel(level: number): AqiBand {
 }
 
 /** Returns true when escalation level is >= 4 (Very Unhealthy or above) */
+/** @testonly */
 export function isHighRiskCondition(escalationLevel: number): boolean {
   return escalationLevel >= 4;
 }
 
 /** Returns true when escalation level is >= 5 (Hazardous or above) */
+/** @testonly */
 export function isEmergencyCondition(escalationLevel: number): boolean {
   return escalationLevel >= 5;
 }

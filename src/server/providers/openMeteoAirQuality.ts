@@ -37,6 +37,7 @@ export function roundCoordinates(lat: number, lon: number): { lat: number; lon: 
   return { lat: Math.round(lat * 100) / 100, lon: Math.round(lon * 100) / 100 };
 }
 
+/** @testonly */
 export function clearAirQualityCaches(): void {
   AQI_CACHE.clear();
   AQI_CALLS.clear();

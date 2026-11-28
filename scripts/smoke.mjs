@@ -52,23 +52,30 @@ async function runSmoke() {
     })) && allPass;
 
   allPass =
-    (await check('GET /api/geocode?q=Delhi', async () => {
-      const res = await fetch(`${BASE_URL}/api/geocode?q=Delhi`);
+    (await check('GET /api/city-scenario?q=Delhi', async () => {
+      const res = await fetch(`${BASE_URL}/api/city-scenario?q=Delhi`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      const items = Array.isArray(json) ? json : json.results;
-      if (!Array.isArray(items) || items.length === 0) throw new Error('No geocode results');
+      if (!json.city || typeof json.pm25 !== 'number') throw new Error('Invalid city scenario');
     })) && allPass;
 
   allPass =
-    (await check('POST /api/plan (Deterministic plan generation)', async () => {
-      const res = await fetch(`${BASE_URL}/api/plan`, {
+    (await check('POST /api/playbook (Deterministic playbook generation)', async () => {
+      const res = await fetch(`${BASE_URL}/api/playbook`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          mode: 'basic',
+          location: {
+            id: 'smoke-delhi',
+            city: 'New Delhi, India',
+            shortCity: 'New Delhi',
+            subtitle: 'Smoke Test',
+            sourceLabel: 'Smoke Test',
+            pm25: 180,
+            hourlyPM25: [],
+            hourlyWind: [],
+          },
           profile: {
-            schemaVersion: 2,
             vulnerabilities: ['kids'],
             purifier: 'none',
             kitchenExhaust: true,
@@ -76,20 +83,11 @@ async function runSmoke() {
             commuteKm: 16,
             budgetTier: 'zero_cost',
           },
-          snapshot: {
-            aqi: 280,
-            pm25: 180,
-            timestamp: new Date().toISOString(),
-            provider: 'Smoke Test',
-            isStale: false,
-            isFallback: false,
-          },
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      const actions = json.actions || json.routine;
-      if (!actions || actions.length === 0) throw new Error('No plan actions generated');
+      if (!json.playbook?.iaqHacks?.length) throw new Error('No playbook actions generated');
     })) && allPass;
 
   allPass =

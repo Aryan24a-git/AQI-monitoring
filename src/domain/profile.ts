@@ -128,6 +128,7 @@ export function createDefaultProfileV2(): ProfileV2 {
   };
 }
 
+/** @testonly */
 export function migrateProfileV1ToV2(raw: unknown): ProfileV2 {
   const direct = ProfileV2Schema.safeParse(raw);
   if (direct.success) return direct.data;
@@ -240,6 +241,7 @@ export function migrateProfileV2ToV1(data: ProfileV2): Profile {
   };
 }
 
+/** @testonly */
 export function migrateProfile(raw: unknown): Profile | null {
   const v1 = ProfileSchema.safeParse(raw);
   if (v1.success) return v1.data;

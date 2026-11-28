@@ -53,11 +53,7 @@ async function mockUpstreamApis(page: Page): Promise<void> {
   await page.route('**/air-quality-api.open-meteo.com/**', (route: Route) =>
     route.fulfill({ json: MOCK_AQI })
   );
-  await page.route('**/api/geocode*', (route: Route) =>
-    route.fulfill({ json: { results: MOCK_GEOCODE.results } })
-  );
   await page.route('**/api/air-quality*', (route: Route) => route.fulfill({ json: MOCK_AQI }));
-  await page.route('**/api/plan', (route: Route) => route.fulfill({ json: MOCK_PLAN }));
   await page.route('**/api/ask', (route: Route) =>
     route.fulfill({
       json: {

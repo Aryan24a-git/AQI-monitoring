@@ -20,6 +20,7 @@ let modelUnavailable = false;
 let modelSucceeded = false;
 let cachedReadyProbe: { ok: boolean; checkedAt: number } | null = null;
 
+/** @testonly */
 export function isLlmModelUnavailable(): boolean {
   return modelUnavailable;
 }
@@ -29,6 +30,7 @@ export function recordLlmSuccess(): void {
   cachedReadyProbe = { ok: true, checkedAt: Date.now() };
 }
 
+/** @testonly */
 export function resetLlmAvailabilityForTests(): void {
   modelNotFoundLogged = false;
   modelUnavailable = false;

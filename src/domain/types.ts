@@ -66,6 +66,7 @@ export const HouseholdProfileSchema = z.object({
   commuteModes: z.array(CommuteModeEnum).max(5),
   budget: BudgetEnum,
 });
+/** @testonly */
 export type HouseholdProfile = z.infer<typeof HouseholdProfileSchema>;
 
 // ─── Location & Coordinate Rounding (DATA-001) ────────────────────────────────
@@ -82,6 +83,7 @@ export const LocationSchema = z.object({
 });
 export type Location = z.infer<typeof LocationSchema>;
 
+/** @testonly */
 export function roundLocation(loc: Location): Location {
   return {
     latitude: roundCoordinate(loc.latitude),

@@ -40,6 +40,7 @@ const CACHE = new LruCache<string, readonly GeocodingResult[]>({
 const CALLS = new RequestCoalescer<string, readonly GeocodingResult[]>();
 const BREAKER = new CircuitBreaker({ failureThreshold: 5, openMs: 30_000 });
 
+/** @testonly */
 export function clearGeocodingCache(): void {
   CACHE.clear();
   CALLS.clear();

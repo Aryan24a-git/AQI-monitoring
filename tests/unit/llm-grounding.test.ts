@@ -2,11 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { createDefaultProfile } from '../../src/domain/profile';
 import { buildBasicPlan } from '../../src/domain/plan';
 import type { LlmClient } from '../../src/server/llm/client';
-import { NullClient } from '../../src/server/llm/client';
-import { narrate, clearNarrativeCache } from '../../src/server/llm/narrate';
 import { ask } from '../../src/server/llm/ask';
 import { validateNarrative, classifyQuestionScope } from '../../src/server/llm/guardrails';
-import { DailyCallBudget } from '../../src/server/llm/budget';
 import corpus from '../fixtures/llm/adversarial-corpus.json';
 import validNarrative from '../fixtures/llm/valid-narrative.json';
 
@@ -37,42 +34,9 @@ describe('grounded LLM narration', () => {
       }).ok
     ).toBe(false);
   });
-
-  it('uses NullClient or failure for a valid fallback plan', async () => {
-    clearNarrativeCache();
-    const result = await narrate(
-      createDefaultProfile(),
-      'Unhealthy',
-      72,
-      [{ id: 'ACT-002', rangeText: '20–50 %' }],
-      new NullClient()
-    );
-    expect(result.isFallback).toBe(true);
-    expect(result.narrative.headline).toContain('Unhealthy');
-  });
-
-  it('caches identical narration inputs', async () => {
-    clearNarrativeCache();
-    const complete = vi.fn(async () => JSON.stringify(validNarrative));
-    const client = { complete } as LlmClient;
-    const profile = createDefaultProfile();
-    const items = [{ id: 'ACT-002', rangeText: '20–50 %' }];
-    await narrate(profile, 'Unhealthy', 72, items, client);
-    await narrate(profile, 'Unhealthy', 74, items, client);
-    expect(complete).toHaveBeenCalledTimes(1);
-  });
 });
 
 describe('bounded scoped Q&A', () => {
-  it('enforces a resettable global daily call cap', () => {
-    const budget = new DailyCallBudget(2);
-    const day = new Date('2026-11-22T12:00:00Z');
-    expect(budget.tryReserve(day)).toBe(true);
-    expect(budget.tryReserve(day)).toBe(true);
-    expect(budget.tryReserve(day)).toBe(false);
-    expect(budget.tryReserve(new Date('2026-11-23T12:00:00Z'))).toBe(true);
-  });
-
   it('refuses off-topic and diagnosis questions', async () => {
     const now = new Date('2026-11-22T12:00:00Z');
     const profile = createDefaultProfile();

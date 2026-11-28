@@ -2,8 +2,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { handleAsk } from '../../src/server/api/ask';
 import { handlePlaybook } from '../../src/server/api/playbook';
-import { handlePlanNarrate } from '../../src/server/api/narrate';
-import { handlePlan } from '../../src/server/api/plan';
 import { resetLlmAvailabilityForTests } from '../../src/server/llm/client';
 import { CPCB_BANDS } from '../../src/domain/naqi';
 
@@ -139,58 +137,5 @@ describe('Server-side AI consent enforcement', () => {
     const withConsentBody = (await withConsentRes.json()) as { source: string };
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(withConsentBody.source).toBe('ai');
-  });
-
-  it('/api/plan/narrate: never calls provider without aiConsent, calls provider with aiConsent: true', async () => {
-    const basePayload = {
-      band: 'Very Poor',
-      pm25: 180,
-      items: [{ id: 'ACT-001', rangeText: '20-40%' }],
-    };
-
-    const noConsentRes = await handlePlanNarrate(
-      makeReq('/api/plan/narrate', basePayload, '10.0.3.1')
-    );
-    const noConsentBody = (await noConsentRes.json()) as { source: string };
-    expect(noConsentBody.source).toBe('basic');
-    expect(fetchSpy).not.toHaveBeenCalled();
-
-    fetchSpy.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        choices: [
-          {
-            message: {
-              content: JSON.stringify({
-                headline: 'Protect your household in Very Poor air',
-                itemNotes: [
-                  {
-                    id: 'ACT-001',
-                    why: 'This cuts indoor smoke by 20-40% today.',
-                    tip: 'Seal doors and windows during peak smog.',
-                  },
-                ],
-                closing: 'Seek emergency care for severe breathing symptoms.',
-              }),
-            },
-          },
-        ],
-      }),
-    });
-    const withConsentRes = await handlePlanNarrate(
-      makeReq('/api/plan/narrate', { ...basePayload, aiConsent: true }, '10.0.3.2')
-    );
-    const withConsentBody = (await withConsentRes.json()) as { source: string };
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
-    expect(withConsentBody.source).toBe('ai');
-  });
-
-  it('/api/plan live mode: never calls provider without aiConsent', async () => {
-    const res = await handlePlan(
-      makeReq('/api/plan', { aqi: 240, pm25: 110, mode: 'live' }, '10.0.4.1')
-    );
-    const body = (await res.json()) as { source: string };
-    expect(body.source).toBe('basic');
-    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

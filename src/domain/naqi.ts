@@ -168,6 +168,7 @@ export function calculateCPCBNAQI(pm25: number, pm10?: number, no2?: number): Na
   };
 }
 
+/** @testonly */
 export function safeCalculateCPCBNAQI(
   pm25: number,
   pm10?: number,

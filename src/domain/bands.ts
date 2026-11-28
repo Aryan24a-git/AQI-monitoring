@@ -76,6 +76,7 @@ export const AQI_BANDS: readonly AqiBandDefinition[] = [
   },
 ] as const;
 
+/** @testonly */
 export function findBandByAqi(aqi: number): AqiBandDefinition {
   const clamped = Math.max(0, aqi);
   const found = AQI_BANDS.find((b) => clamped >= b.aqiMin && clamped <= b.aqiMax);
@@ -88,6 +89,7 @@ export function findBandByPm25(pm25: number): AqiBandDefinition {
   return found ?? AQI_BANDS[AQI_BANDS.length - 1]!;
 }
 
+/** @testonly */
 export function getBandByOrdinal(ordinal: number): AqiBandDefinition {
   const clamped = Math.min(Math.max(ordinal, 0), AQI_BANDS.length - 1);
   return AQI_BANDS[clamped]!;
@@ -97,6 +99,7 @@ export function getBandByOrdinal(ordinal: number): AqiBandDefinition {
  * Escalate an AQI band by a given number of steps, clamped to [0, 5].
  * Pure function with no side effects.
  */
+/** @testonly */
 export function escalateBand(band: AqiBandDefinition, steps: number): AqiBandDefinition {
   const newOrdinal = Math.min(Math.max(band.ordinal + steps, 0), AQI_BANDS.length - 1);
   return AQI_BANDS[newOrdinal]!;

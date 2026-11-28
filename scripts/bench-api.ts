@@ -1,24 +1,29 @@
 const baseUrl = process.env['BENCH_URL'] ?? 'http://localhost:3000';
 const body = JSON.stringify({
-  profile: {
-    schemaVersion: 1,
-    members: [{ ageBand: 'adult', vulnerabilityFlags: [] }],
-    housingType: 'average',
-    hasPurifier: false,
-    cookingFuel: 'lpg',
-    heatingType: 'none',
-    commuteTypes: ['bus'],
-    budgetBand: 'low',
+  location: {
+    id: 'bench-delhi',
+    city: 'New Delhi, India',
+    shortCity: 'New Delhi',
+    subtitle: 'Benchmark',
+    sourceLabel: 'Benchmark',
+    pm25: 175,
+    hourlyPM25: [],
+    hourlyWind: [],
   },
-  aqi: 175,
-  pm25: 72,
-  mode: 'basic',
+  profile: {
+    vulnerabilities: ['kids'],
+    purifier: 'none',
+    kitchenExhaust: true,
+    commuteMode: 'public_transit',
+    commuteKm: 12,
+    budgetTier: 'zero_cost',
+  },
 });
 const durations: number[] = [];
 async function main(): Promise<void> {
   for (let index = 0; index < 100; index += 1) {
     const start = performance.now();
-    const response = await fetch(`${baseUrl}/api/plan`, {
+    const response = await fetch(`${baseUrl}/api/playbook`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -64,6 +64,7 @@ export const DEFAULT_PROFILE: HouseholdProfile = {
   budgetTier: 'zero_cost',
 };
 
+/** @testonly */
 export const SCENARIOS: Record<string, LocationScenario> = {
   delhi: {
     id: 'demo:delhi',

@@ -29,6 +29,7 @@ export interface GroundingInput {
 
 export type GuardrailResult = { ok: true; value: NarrativeOutput } | { ok: false; reason: string };
 
+/** @testonly */
 export function validateNarrative(raw: unknown, grounding: GroundingInput): GuardrailResult {
   if (typeof raw !== 'object' || raw === null) {
     return { ok: false, reason: 'invalid_json' };
@@ -97,6 +98,7 @@ export function containsInjection(text: string): boolean {
   );
 }
 
+/** @testonly */
 export function sanitizeInput(text: string, maxLength = 250): string {
   return text.trim().slice(0, maxLength);
 }

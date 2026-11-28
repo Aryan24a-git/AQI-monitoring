@@ -87,6 +87,7 @@ const STATION_CACHE = new LruCache<string, WaqiStationReading>({
   ttlMs: 15 * 60 * 1000,
 });
 
+/** @testonly */
 export function clearWaqiCache(): void {
   STATION_CACHE.clear();
 }

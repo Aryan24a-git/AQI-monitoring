@@ -5,10 +5,10 @@
 
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { CatalogSchema } from './catalog.schema';
+import { CatalogSchema } from '../src/catalog/catalog.schema';
 
 function validateCatalog(): void {
-  const catalogPath = join(__dirname, 'catalog.json');
+  const catalogPath = join(__dirname, '..', 'src', 'catalog', 'catalog.json');
   const raw = readFileSync(catalogPath, 'utf-8');
   const json: unknown = JSON.parse(raw);
 

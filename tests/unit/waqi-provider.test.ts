@@ -7,7 +7,7 @@ import {
   validateWaqiReading,
   type WaqiStationReading,
 } from '../../src/server/providers/waqiAirQuality';
-import { buildCombinedScenario } from '../../src/server/api/cityScenario';
+import { buildCombinedScenario } from '../../src/server/api/cityScenarioBuilder';
 
 describe('WAQI Air Quality Provider', () => {
   beforeEach(() => {

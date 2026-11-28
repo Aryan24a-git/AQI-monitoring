@@ -10,7 +10,8 @@ import {
   readJsonBoundary,
 } from '../../src/server/security/limits';
 import { handleAsk } from '../../src/server/api/ask';
-import { handlePlan } from '../../src/server/api/plan';
+import { handlePlaybook } from '../../src/server/api/playbook';
+import { SCENARIOS, DEFAULT_PROFILE } from '../../src/domain/scenarios';
 
 describe('Security Boundaries & Single Limits Table', () => {
   it('enforces streamed JSON body cap even without content-length header', async () => {
@@ -43,16 +44,16 @@ describe('Security Boundaries & Single Limits Table', () => {
     expect(data.fallbackReason).toBe('off_topic_or_injection');
   });
 
-  it('enforces per-route rate limit from RATE_LIMITS on /api/plan', async () => {
+  it('enforces per-route rate limit from RATE_LIMITS on /api/playbook', async () => {
     const ip = '203.0.113.203';
     let lastStatus = 200;
-    for (let i = 0; i < RATE_LIMITS.planPerMinute + 1; i += 1) {
-      const req = new NextRequest('http://localhost/api/plan', {
+    for (let i = 0; i < RATE_LIMITS.playbookPerMinute + 1; i += 1) {
+      const req = new NextRequest('http://localhost/api/playbook', {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-forwarded-for': ip },
-        body: JSON.stringify({ aqi: 200, pm25: 100, mode: 'basic' }),
+        body: JSON.stringify({ location: SCENARIOS.delhi, profile: DEFAULT_PROFILE }),
       });
-      const res = await handlePlan(req);
+      const res = await handlePlaybook(req);
       lastStatus = res.status;
     }
     expect(lastStatus).toBe(429);

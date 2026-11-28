@@ -75,6 +75,7 @@ export function formatImpactForDisplay(impact: Impact): ImpactDisplay {
  * Calculate projected community impact if N households take an action.
  * Returns ranges, not point estimates (D4).
  */
+/** @testonly */
 export function calculateCommunityImpact(
   impact: Impact,
   householdCount: number,
@@ -109,6 +110,7 @@ export function calculateCommunityImpact(
 }
 
 /** Returns a plain-language confidence summary for plain-language copy (A11Y-006) */
+/** @testonly */
 export function getPlainLanguageConfidence(confidence: Confidence): string {
   switch (confidence) {
     case 'high':

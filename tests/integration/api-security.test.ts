@@ -3,15 +3,14 @@ import { setupServer } from 'msw/node';
 import { http, HttpResponse } from 'msw';
 import { NextRequest } from 'next/server';
 import { GET as airQualityGet } from '../../src/app/api/air-quality/route';
-import { GET as geocodeGet } from '../../src/app/api/geocode/route';
-import { POST as planPost } from '../../src/app/api/plan/route';
+import { POST as playbookPost } from '../../src/app/api/playbook/route';
 import { POST as askPost } from '../../src/app/api/ask/route';
 import { GET as healthGet } from '../../src/app/api/health/route';
 import { GET as readyGet } from '../../src/app/api/ready/route';
 import { GET as cityScenarioGet } from '../../src/app/api/city-scenario/route';
 import { clearGeocodingCache } from '../../src/server/providers/geocoding';
 import { openMeteoHandlers } from './msw/handlers';
-import { createDefaultProfile } from '../../src/domain/profile';
+import { SCENARIOS, DEFAULT_PROFILE } from '../../src/domain/scenarios';
 import { clearAirQualityCaches } from '../../src/server/providers/openMeteoAirQuality';
 import { getHashedClientKey } from '../../src/server/security/rateLimit';
 import { RATE_LIMITS } from '../../src/server/security/limits';
@@ -38,9 +37,9 @@ describe('API boundary security', () => {
     expect(response.headers.get('access-control-allow-origin')).toBeNull();
   });
 
-  it('validates geocoding queries and returns 400', async () => {
-    const response = await geocodeGet(
-      request('http://localhost/api/geocode?q=x', {
+  it('validates city-scenario queries and returns 400', async () => {
+    const response = await cityScenarioGet(
+      request('http://localhost/api/city-scenario?q=x', {
         headers: { 'x-forwarded-for': '203.0.113.11' },
       })
     );
@@ -48,8 +47,8 @@ describe('API boundary security', () => {
   });
 
   it('rejects malformed JSON with the single error format', async () => {
-    const response = await planPost(
-      request('http://localhost/api/plan', {
+    const response = await playbookPost(
+      request('http://localhost/api/playbook', {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.17' },
         body: '{not-json',
@@ -59,9 +58,9 @@ describe('API boundary security', () => {
     expect((await response.json()).code).toBe('BAD_REQUEST');
   });
 
-  it('rejects unsupported content type and oversized plan bodies', async () => {
-    const unsupported = await planPost(
-      request('http://localhost/api/plan', {
+  it('rejects unsupported content type and oversized playbook bodies', async () => {
+    const unsupported = await playbookPost(
+      request('http://localhost/api/playbook', {
         method: 'POST',
         headers: { 'content-type': 'text/plain', 'x-forwarded-for': '203.0.113.12' },
         body: '{}',
@@ -69,8 +68,8 @@ describe('API boundary security', () => {
     );
     expect(unsupported.status).toBe(415);
 
-    const oversized = await planPost(
-      request('http://localhost/api/plan', {
+    const oversized = await playbookPost(
+      request('http://localhost/api/playbook', {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -83,22 +82,20 @@ describe('API boundary security', () => {
     expect(oversized.status).toBe(413);
   });
 
-  it('produces basic plans and never exposes LLM failure details', async () => {
+  it('produces basic playbooks and never exposes LLM failure details', async () => {
     const body = JSON.stringify({
-      profile: createDefaultProfile(),
-      aqi: 175,
-      pm25: 72,
-      mode: 'basic',
+      location: SCENARIOS.delhi,
+      profile: DEFAULT_PROFILE,
     });
-    const response = await planPost(
-      request('http://localhost/api/plan', {
+    const response = await playbookPost(
+      request('http://localhost/api/playbook', {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.14' },
         body,
       })
     );
     expect(response.status).toBe(200);
-    expect((await response.json()).isFallback).toBe(true);
+    expect((await response.json()).source).toBe('basic');
   });
 
   it('returns 429 with Retry-After for ask requests', async () => {
