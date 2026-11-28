@@ -16,7 +16,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "morning",
       "feasibilityNote": "Free. Requires a smartphone or any internet access.",
       "impact": {
@@ -72,7 +79,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "daytime",
       "feasibilityNote": "Free. Only shown at AQI < 150 (escalation ≤ 3).",
       "impact": {
@@ -128,7 +142,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "morning",
       "feasibilityNote": "Low cost (~INR 30–150 per mask). Reusable N95s available.",
       "impact": {
@@ -156,7 +177,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed"],
       "targetVulnerabilityFlags": ["asthma", "heart_disease", "lung_disease", "elderly", "infant"],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "night",
       "feasibilityNote": "Medium cost (INR 3,000–15,000 for a room purifier). Free DIY alternative: ACT-010.",
       "impact": {
@@ -212,7 +240,14 @@
       "targetHousingTypes": ["poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "daytime",
       "feasibilityNote": "Low cost (INR 100–400 for a room). One-time installation, lasts 2–3 years.",
       "impact": {
@@ -240,7 +275,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": ["asthma", "lung_disease"],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "daytime",
       "feasibilityNote": "Free: use wet towels or a bucket of water near a heater. Hygrometer INR 150–400.",
       "impact": {
@@ -268,7 +310,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "daytime",
       "feasibilityNote": "Low cost (INR 800–2,500 for fan + filters). Instructions at corsirosenthal.com",
       "impact": {
@@ -296,7 +345,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "morning",
       "feasibilityNote": "Free or low cost where metro/bus available. Metro usually cheaper than fuel.",
       "impact": {
@@ -380,7 +436,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "daytime",
       "feasibilityNote": "Free. Plain water or regular soap.",
       "impact": {
@@ -408,7 +471,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "daytime",
       "feasibilityNote": "Free. Use compost or municipal waste collection instead.",
       "impact": {
@@ -436,7 +506,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "morning",
       "feasibilityNote": "Free. 1 minute. Use the app's share button to generate ready-to-send text.",
       "impact": {
@@ -464,11 +541,22 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": ["asthma", "heart_disease", "lung_disease", "elderly", "infant"],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "morning",
       "feasibilityNote": "Call 112 (India emergency) or local emergency services immediately.",
       "impact": {
-        "magnitudeRange": { "low": 100, "high": 100, "unit": "% life-threatening risk reduction if acted on immediately" },
+        "magnitudeRange": {
+          "low": 100,
+          "high": 100,
+          "unit": "% life-threatening risk reduction if acted on immediately"
+        },
         "magnitudeDescription": "Immediate medical intervention for severe respiratory distress is life-saving",
         "basis": "Clinical emergency care guidelines for severe PM2.5-induced respiratory events; ATS/ERS severe asthma guidelines",
         "confidence": "high",
@@ -492,7 +580,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "morning",
       "feasibilityNote": "Free if WFH is available in your role.",
       "impact": {
@@ -548,7 +643,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": ["asthma", "heart_disease", "lung_disease"],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "evening",
       "feasibilityNote": "Free. Substitute with light stretching or yoga which keeps breathing rate low.",
       "impact": {
@@ -576,11 +678,22 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "daytime",
       "feasibilityNote": "Free. Use CPCB Sameer App or call local municipal/fire helpline 101.",
       "impact": {
-        "magnitudeRange": { "low": 5, "high": 25, "unit": "% reduction in local emission events if reports acted on" },
+        "magnitudeRange": {
+          "low": 5,
+          "high": 25,
+          "unit": "% reduction in local emission events if reports acted on"
+        },
         "magnitudeDescription": "Each actioned report prevents an estimated 500 kg–5 tonnes of PM2.5 from a single burning episode",
         "basis": "CPCB enforcement data: 60–70% of reported fires suppressed within 2 hours in Delhi NCR (CPCB enforcement report 2022); open burn emission factors from AP-42",
         "confidence": "medium",
@@ -604,7 +717,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "daytime",
       "feasibilityNote": "Free or cost-neutral. Local markets are typically cheaper than supermarkets.",
       "impact": {
@@ -632,11 +752,22 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "any",
       "feasibilityNote": "Free. 2 minutes online. Use MyGov.in or Change.org for India-based petitions.",
       "impact": {
-        "magnitudeRange": { "low": 1, "high": 5, "unit": "% likelihood of policy adoption per 10,000 signatures" },
+        "magnitudeRange": {
+          "low": 1,
+          "high": 5,
+          "unit": "% likelihood of policy adoption per 10,000 signatures"
+        },
         "magnitudeDescription": "Policy adoption probability increases measurably with signature thresholds; at scale, anti-stubble policies could reduce regional PM2.5 by 15–30%",
         "basis": "Policy adoption research: petitions crossing 10,000 signatures have 3–8% policy response rate in parliamentary systems (King et al., 2017, Science); stubble reduction PM2.5 impact from CPCB satellite data",
         "confidence": "low",
@@ -688,11 +819,22 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": ["asthma", "infant"],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "morning",
       "feasibilityNote": "Free. Draft a sample letter via the app's share feature and submit to school administration.",
       "impact": {
-        "magnitudeRange": { "low": 25, "high": 60, "unit": "% reduction in school-day PM2.5 exposure for enrolled children" },
+        "magnitudeRange": {
+          "low": 25,
+          "high": 60,
+          "unit": "% reduction in school-day PM2.5 exposure for enrolled children"
+        },
         "magnitudeDescription": "If adopted, shifts outdoor play for 200–1,000 children per school away from peak smog periods — 25–60% daily dose reduction per child",
         "basis": "Children's outdoor PM2.5 exposure models; school-based interventions in Delhi showed 30–55% reduction in outdoor exposure-hours (CPCB school air quality study 2021; Spira-Cohen et al., 2011)",
         "confidence": "medium",
@@ -716,7 +858,14 @@
       "targetHousingTypes": ["well_sealed", "average", "poorly_sealed", "open"],
       "targetVulnerabilityFlags": [],
       "requiredVulnerabilityFlags": [],
-      "cookingFuelRelevance": ["lpg", "natural_gas", "kerosene", "biomass", "electric", "induction"],
+      "cookingFuelRelevance": [
+        "lpg",
+        "natural_gas",
+        "kerosene",
+        "biomass",
+        "electric",
+        "induction"
+      ],
       "timeOfDay": "morning",
       "feasibilityNote": "Free for cycling. E-scooter rental INR 5–15/km in Indian cities.",
       "impact": {

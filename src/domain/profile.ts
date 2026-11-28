@@ -128,52 +128,47 @@ export function createDefaultProfileV2(): ProfileV2 {
   };
 }
 
+function mapV1Vulnerabilities(members: Profile['members']): VulnerabilityV2[] {
+  const vulns: VulnerabilityV2[] = [];
+  if (members.some((m) => m.ageBand === 'infant' || m.ageBand === 'child')) vulns.push('kids');
+  if (members.some((m) => m.ageBand === 'elderly')) vulns.push('seniors');
+  const hasResp = members.some(
+    (m) => m.vulnerabilityFlags.includes('asthma') || m.vulnerabilityFlags.includes('lung_disease')
+  );
+  if (hasResp) vulns.push('asthma');
+  return vulns.length > 0 ? vulns : ['none'];
+}
+
+function mapV1Commute(commuteTypes: Profile['commuteTypes']): CommuteModeV2 {
+  if (commuteTypes.includes('work_from_home')) return 'wfh';
+  if (commuteTypes.includes('bus') || commuteTypes.includes('metro')) return 'public_transit';
+  if (commuteTypes.includes('motorcycle')) return 'two_wheeler';
+  return 'solo_car';
+}
+
+function mapV1Budget(budgetBand: Profile['budgetBand']): BudgetTierV2 {
+  if (budgetBand === 'medium' || budgetBand === 'high') return 'paid_upgrades';
+  return budgetBand === 'low' ? 'diy_2000' : 'zero_cost';
+}
+
 /** @testonly */
 export function migrateProfileV1ToV2(raw: unknown): ProfileV2 {
   const direct = ProfileV2Schema.safeParse(raw);
   if (direct.success) return direct.data;
-
   const v1 = ProfileSchema.safeParse(raw);
-  if (v1.success) {
-    const data = v1.data;
-    const vulns: VulnerabilityV2[] = [];
-    if (data.members.some((m) => m.ageBand === 'infant' || m.ageBand === 'child'))
-      vulns.push('kids');
-    if (data.members.some((m) => m.ageBand === 'elderly')) vulns.push('seniors');
-    if (
-      data.members.some(
-        (m) =>
-          m.vulnerabilityFlags.includes('asthma') || m.vulnerabilityFlags.includes('lung_disease')
-      )
-    ) {
-      vulns.push('asthma');
-    }
-    const finalVulns = vulns.length > 0 ? vulns : (['none'] as VulnerabilityV2[]);
-
-    let commuteMode: CommuteModeV2 = 'solo_car';
-    if (data.commuteTypes.includes('work_from_home')) commuteMode = 'wfh';
-    else if (data.commuteTypes.includes('bus') || data.commuteTypes.includes('metro'))
-      commuteMode = 'public_transit';
-    else if (data.commuteTypes.includes('motorcycle')) commuteMode = 'two_wheeler';
-
-    let budgetTier: BudgetTierV2 = 'zero_cost';
-    if (data.budgetBand === 'medium' || data.budgetBand === 'high') budgetTier = 'paid_upgrades';
-    else if (data.budgetBand === 'low') budgetTier = 'diy_2000';
-
-    return {
-      schemaVersion: 2,
-      vulnerabilities: finalVulns,
-      purifier: data.hasPurifier ? 'one_room' : 'none',
-      kitchenExhaust: data.cookingFuel === 'electric' || data.cookingFuel === 'induction',
-      commuteMode,
-      commuteKm: 16,
-      budgetTier,
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt,
-    };
-  }
-
-  return createDefaultProfileV2();
+  if (!v1.success) return createDefaultProfileV2();
+  const data = v1.data;
+  return {
+    schemaVersion: 2,
+    vulnerabilities: mapV1Vulnerabilities(data.members),
+    purifier: data.hasPurifier ? 'one_room' : 'none',
+    kitchenExhaust: data.cookingFuel === 'electric' || data.cookingFuel === 'induction',
+    commuteMode: mapV1Commute(data.commuteTypes),
+    commuteKm: 16,
+    budgetTier: mapV1Budget(data.budgetBand),
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
+  };
 }
 
 // ─── Helpers (V1 Compatibility) ──────────────────────────────────────────────

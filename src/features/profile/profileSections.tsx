@@ -58,6 +58,36 @@ export function VulnerabilitySection({ draft, setDraft }: SectionProps) {
   );
 }
 
+function ExhaustToggle({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (val: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between bg-stone-50 border border-stone-200 rounded-xl p-3">
+      <div>
+        <div className="text-xs font-semibold text-slate-800">Kitchen Exhaust Fan / Chimney</div>
+        <div className="text-[11px] text-slate-500">
+          Crucial for trapping tadka &amp; frying PM2.5
+        </div>
+      </div>
+      <label className="relative inline-flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          aria-label="Kitchen Exhaust Fan or Chimney"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="sr-only peer"
+        />
+        <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-700" />
+      </label>
+    </div>
+  );
+}
+
+/** Purifier availability and kitchen exhaust toggle section for the profile drawer. */
 export function HomeAirSection({ draft, setDraft }: SectionProps) {
   return (
     <div className="space-y-3">
@@ -85,25 +115,10 @@ export function HomeAirSection({ draft, setDraft }: SectionProps) {
           ))}
         </div>
       </div>
-
-      <div className="flex items-center justify-between bg-stone-50 border border-stone-200 rounded-xl p-3">
-        <div>
-          <div className="text-xs font-semibold text-slate-800">Kitchen Exhaust Fan / Chimney</div>
-          <div className="text-[11px] text-slate-500">
-            Crucial for trapping tadka &amp; frying PM2.5
-          </div>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            aria-label="Kitchen Exhaust Fan or Chimney"
-            checked={draft.kitchenExhaust}
-            onChange={(e) => setDraft((p) => ({ ...p, kitchenExhaust: e.target.checked }))}
-            className="sr-only peer"
-          />
-          <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-700" />
-        </label>
-      </div>
+      <ExhaustToggle
+        checked={draft.kitchenExhaust}
+        onChange={(kitchenExhaust) => setDraft((p) => ({ ...p, kitchenExhaust }))}
+      />
     </div>
   );
 }

@@ -33,12 +33,33 @@ interface AqiReading {
   band?: string;
 }
 
+function cpcbLabel(index: number, fallback: string): string {
+  return CPCB_BANDS[index]?.label ?? fallback;
+}
+
+function getFallbackAqiBand(): AqiBand {
+  return (
+    AQI_BANDS[AQI_BANDS.length - 1] ?? {
+      id: 'severe',
+      label: 'Severe (Winter Smog)',
+      aqiMin: 501,
+      aqiMax: Infinity,
+      pm25Min: 500.1,
+      pm25Max: Infinity,
+      escalationLevel: 6,
+      colorToken: 'aqi-severe',
+      icon: '🚨',
+      ariaLabel: 'Severe winter smog air quality',
+    }
+  );
+}
+
 // ─── AQI Band Table ───────────────────────────────────────────────────────────
 
 export const AQI_BANDS: readonly AqiBand[] = [
   {
     id: 'good',
-    label: CPCB_BANDS[0]!.label,
+    label: cpcbLabel(0, 'Good'),
     aqiMin: 0,
     aqiMax: 50,
     pm25Min: 0,
@@ -46,11 +67,11 @@ export const AQI_BANDS: readonly AqiBand[] = [
     escalationLevel: 0,
     colorToken: 'aqi-good',
     icon: '✓',
-    ariaLabel: `${CPCB_BANDS[0]!.label} air quality`,
+    ariaLabel: `${cpcbLabel(0, 'Good')} air quality`,
   },
   {
     id: 'moderate',
-    label: CPCB_BANDS[1]!.label,
+    label: cpcbLabel(1, 'Satisfactory'),
     aqiMin: 51,
     aqiMax: 100,
     pm25Min: 12.1,
@@ -58,11 +79,11 @@ export const AQI_BANDS: readonly AqiBand[] = [
     escalationLevel: 1,
     colorToken: 'aqi-moderate',
     icon: '!',
-    ariaLabel: `${CPCB_BANDS[1]!.label} air quality`,
+    ariaLabel: `${cpcbLabel(1, 'Satisfactory')} air quality`,
   },
   {
     id: 'usg',
-    label: CPCB_BANDS[2]!.label,
+    label: cpcbLabel(2, 'Moderately Polluted'),
     aqiMin: 101,
     aqiMax: 150,
     pm25Min: 35.5,
@@ -70,11 +91,11 @@ export const AQI_BANDS: readonly AqiBand[] = [
     escalationLevel: 2,
     colorToken: 'aqi-usg',
     icon: '⚠',
-    ariaLabel: `${CPCB_BANDS[2]!.label} air quality`,
+    ariaLabel: `${cpcbLabel(2, 'Moderately Polluted')} air quality`,
   },
   {
     id: 'unhealthy',
-    label: CPCB_BANDS[3]!.label,
+    label: cpcbLabel(3, 'Poor'),
     aqiMin: 151,
     aqiMax: 200,
     pm25Min: 55.5,
@@ -82,11 +103,11 @@ export const AQI_BANDS: readonly AqiBand[] = [
     escalationLevel: 3,
     colorToken: 'aqi-unhealthy',
     icon: '⚠⚠',
-    ariaLabel: `${CPCB_BANDS[3]!.label} air quality`,
+    ariaLabel: `${cpcbLabel(3, 'Poor')} air quality`,
   },
   {
     id: 'very_unhealthy',
-    label: CPCB_BANDS[4]!.label,
+    label: cpcbLabel(4, 'Very Poor'),
     aqiMin: 201,
     aqiMax: 300,
     pm25Min: 150.5,
@@ -94,11 +115,11 @@ export const AQI_BANDS: readonly AqiBand[] = [
     escalationLevel: 4,
     colorToken: 'aqi-very-unhealthy',
     icon: '✕',
-    ariaLabel: `${CPCB_BANDS[4]!.label} air quality`,
+    ariaLabel: `${cpcbLabel(4, 'Very Poor')} air quality`,
   },
   {
     id: 'hazardous',
-    label: CPCB_BANDS[5]!.label,
+    label: cpcbLabel(5, 'Severe'),
     aqiMin: 301,
     aqiMax: 500,
     pm25Min: 250.5,
@@ -106,11 +127,11 @@ export const AQI_BANDS: readonly AqiBand[] = [
     escalationLevel: 5,
     colorToken: 'aqi-hazardous',
     icon: '✕✕',
-    ariaLabel: `${CPCB_BANDS[5]!.label} air quality`,
+    ariaLabel: `${cpcbLabel(5, 'Severe')} air quality`,
   },
   {
     id: 'severe',
-    label: `${CPCB_BANDS[5]!.label} (Winter Smog)`,
+    label: `${cpcbLabel(5, 'Severe')} (Winter Smog)`,
     aqiMin: 501,
     aqiMax: Infinity,
     pm25Min: 500.1,
@@ -118,7 +139,7 @@ export const AQI_BANDS: readonly AqiBand[] = [
     escalationLevel: 6,
     colorToken: 'aqi-severe',
     icon: '🚨',
-    ariaLabel: `${CPCB_BANDS[5]!.label} winter smog air quality`,
+    ariaLabel: `${cpcbLabel(5, 'Severe')} winter smog air quality`,
   },
 ] as const;
 
@@ -127,14 +148,14 @@ export const AQI_BANDS: readonly AqiBand[] = [
 /** Classify an AQI value into the corresponding band */
 export function classifyAqi(aqi: number): AqiBand {
   const band = AQI_BANDS.find((b) => aqi >= b.aqiMin && aqi <= b.aqiMax);
-  return band ?? AQI_BANDS[AQI_BANDS.length - 1]!;
+  return band ?? getFallbackAqiBand();
 }
 
 /** Classify using PM2.5 µg/m³ when AQI is unavailable */
 /** @testonly */
 export function classifyPm25(pm25: number): AqiBand {
   const band = AQI_BANDS.find((b) => pm25 >= b.pm25Min && pm25 <= b.pm25Max);
-  return band ?? AQI_BANDS[AQI_BANDS.length - 1]!;
+  return band ?? getFallbackAqiBand();
 }
 
 /**
@@ -155,7 +176,7 @@ export function computeEffectiveEscalationLevel(baseBand: AqiBand, profile: Prof
 /** Get the AqiBand for a given escalation level */
 export function getBandByEscalationLevel(level: number): AqiBand {
   const clamped = Math.min(Math.max(level, 0), 6);
-  return AQI_BANDS.find((b) => b.escalationLevel === clamped) ?? AQI_BANDS[6]!;
+  return AQI_BANDS.find((b) => b.escalationLevel === clamped) ?? getFallbackAqiBand();
 }
 
 /** Returns true when escalation level is >= 4 (Very Unhealthy or above) */

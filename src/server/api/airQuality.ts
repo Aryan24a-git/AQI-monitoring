@@ -10,19 +10,43 @@ import { boundaryError, RATE_LIMITS } from '@/server/security/limits';
 import { apiErrorResponse, securityJson } from '@/server/security/response';
 
 const limiter = createRateLimiter(RATE_LIMITS.airQualityPerMinute);
+const CoordSchema = z
+  .string()
+  .regex(/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/)
+  .transform(Number);
+
 const QuerySchema = z.object({
-  lat: z
-    .string()
-    .regex(/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/)
-    .transform(Number)
-    .pipe(z.number().min(-90).max(90)),
-  lon: z
-    .string()
-    .regex(/^[-+]?(?:\d+(?:\.\d*)?|\.\d+)$/)
-    .transform(Number)
-    .pipe(z.number().min(-180).max(180)),
+  lat: CoordSchema.pipe(z.number().min(-90).max(90)),
+  lon: CoordSchema.pipe(z.number().min(-180).max(180)),
 });
 
+async function fetchAirQualityPayload(lat: number, lon: number) {
+  const env = getEnv();
+  if (env.AQ_PROVIDER.toLowerCase() === 'waqi' && env.WAQI_API_TOKEN) {
+    const station = await fetchWaqiStation(lat, lon, env.WAQI_API_TOKEN);
+    return {
+      aqi: station.aqi,
+      pm25: station.pm25,
+      timestamp: station.timeIso ?? new Date().toISOString(),
+      source: 'WAQI Station (aqicn.org)',
+      isFallback: false,
+      isStale: false,
+      band: findBandByPm25(station.pm25).key,
+    };
+  }
+  const snapshot = await fetchOpenMeteoSnapshot(lat, lon);
+  return {
+    aqi: snapshot.aqi,
+    pm25: snapshot.pm25,
+    timestamp: snapshot.timestamp,
+    source: snapshot.provider,
+    isFallback: snapshot.isFallback,
+    isStale: snapshot.isStale,
+    band: snapshot.band,
+  };
+}
+
+/** Handles GET /api/air-quality for coordinate-based live readings. */
 export async function handleAirQuality(req: NextRequest) {
   return withRateLimit(req, limiter, async ({ requestId }) => {
     const url = new URL(req.url);
@@ -37,41 +61,8 @@ export async function handleAirQuality(req: NextRequest) {
       );
     }
     try {
-      const env = getEnv();
-      if (env.AQ_PROVIDER.toLowerCase() === 'waqi' && env.WAQI_API_TOKEN) {
-        const station = await fetchWaqiStation(
-          parsed.data.lat,
-          parsed.data.lon,
-          env.WAQI_API_TOKEN
-        );
-        return securityJson(
-          {
-            aqi: station.aqi,
-            pm25: station.pm25,
-            timestamp: station.timeIso ?? new Date().toISOString(),
-            source: 'WAQI Station (aqicn.org)',
-            isFallback: false,
-            isStale: false,
-            band: findBandByPm25(station.pm25).key,
-          },
-          200,
-          { [REQUEST_ID_HEADER]: requestId }
-        );
-      }
-      const snapshot = await fetchOpenMeteoSnapshot(parsed.data.lat, parsed.data.lon);
-      return securityJson(
-        {
-          aqi: snapshot.aqi,
-          pm25: snapshot.pm25,
-          timestamp: snapshot.timestamp,
-          source: snapshot.provider,
-          isFallback: snapshot.isFallback,
-          isStale: snapshot.isStale,
-          band: snapshot.band,
-        },
-        200,
-        { [REQUEST_ID_HEADER]: requestId }
-      );
+      const payload = await fetchAirQualityPayload(parsed.data.lat, parsed.data.lon);
+      return securityJson(payload, 200, { [REQUEST_ID_HEADER]: requestId });
     } catch {
       return apiErrorResponse(
         boundaryError(

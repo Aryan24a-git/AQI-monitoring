@@ -24,6 +24,26 @@ export interface AskResult {
   fallbackReason?: string;
 }
 
+function parseGroundedAnswer(raw: string): string | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(stripMarkdownCodeFences(raw));
+  } catch {
+    return null;
+  }
+  const result = AnswerSchema.safeParse(parsed);
+  if (
+    !result.success ||
+    /\d/.test(result.data.answer) ||
+    /https?:\/\/|www\.|<[^>]+>/.test(result.data.answer)
+  ) {
+    logger.warn({ fallbackReason: 'answer_guardrail' }, 'llmFallback');
+    return null;
+  }
+  return result.data.answer;
+}
+
+/** Answers a scoped household air-quality question with strict guardrails and basic fallback. */
 export async function ask(
   question: string,
   profile: Profile,
@@ -50,24 +70,10 @@ export async function ask(
     jsonMode: true,
   });
   void profile;
-  if (!raw) return template(scope);
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(stripMarkdownCodeFences(raw));
-  } catch {
-    return template(scope);
-  }
-  const result = AnswerSchema.safeParse(parsed);
-  if (
-    !result.success ||
-    /\d/.test(result.data.answer) ||
-    /https?:\/\/|www\.|<[^>]+>/.test(result.data.answer)
-  ) {
-    logger.warn({ fallbackReason: 'answer_guardrail' }, 'llmFallback');
-    return template(scope);
-  }
+  const answer = raw ? parseGroundedAnswer(raw) : null;
+  if (!answer) return template(scope);
   return {
-    answer: result.data.answer,
+    answer,
     disclaimer: 'Informational only. Not medical advice.',
     fallback: false,
     source: 'ai',

@@ -46,15 +46,11 @@ const MEDICAL_DISCLAIMER =
 const RED_FLAG_COPY =
   'If anyone has difficulty breathing, chest pain, blue lips, confusion, or cannot complete a sentence, seek immediate medical care or call emergency services.';
 
-export function buildBasicPlan(
+function selectPlanItems(
   profile: Profile,
   snapshot: AirQualitySnapshot,
-  now: Date
-): BasicPlan {
-  const baseBand = classifyAqi(snapshot.aqi);
-  const vulnerability = hasEarlyEscalationVulnerability(profile);
-  const effectiveEscalation = Math.min(baseBand.escalationLevel + (vulnerability ? 1 : 0), 6);
-  const effectiveBand = getBandByEscalationLevel(effectiveEscalation);
+  effectiveEscalation: number
+): readonly BasicPlanItem[] {
   const isSafe = (action: Action) =>
     isSafeAction(action, profile, snapshot.aqi, effectiveEscalation);
   const eligible = rankActions(
@@ -80,13 +76,24 @@ export function buildBasicPlan(
     eligible.filter((action) => action.category === 'alternative'),
     3
   ).filter(isSafe);
-  const sections = [routine, indoors, alternatives];
-  const items = sections.flatMap((actions, sectionIndex) =>
-    actions.map((action, index) =>
-      toPlanItem(action, sectionIndex * 10 + index + 1, profile, snapshot, effectiveEscalation)
-    )
+  return [routine, indoors, alternatives].flatMap((actions, sectionIndex) =>
+    actions.map((action, index) => toPlanItem(action, sectionIndex * 10 + index + 1, snapshot.pm25))
   );
-  const selected = items.map((item) => item.actionId);
+}
+
+/** Builds a deterministic fallback protective plan when AI narration is unavailable or skipped. */
+export function buildBasicPlan(
+  profile: Profile,
+  snapshot: AirQualitySnapshot,
+  now: Date
+): BasicPlan {
+  const baseBand = classifyAqi(snapshot.aqi);
+  const effectiveEscalation = Math.min(
+    baseBand.escalationLevel + (hasEarlyEscalationVulnerability(profile) ? 1 : 0),
+    6
+  );
+  const effectiveBand = getBandByEscalationLevel(effectiveEscalation);
+  const items = selectPlanItems(profile, snapshot, effectiveEscalation);
   const hasSensitiveMember = getAllVulnerabilityFlags(profile).size > 0;
   return {
     headline: `Protective plan for ${effectiveBand.label}`,
@@ -96,7 +103,7 @@ export function buildBasicPlan(
     routine: items.filter((item) => findAction(item.actionId).category === 'routine'),
     indoors: items.filter((item) => findAction(item.actionId).category === 'indoor'),
     alternatives: items.filter((item) => findAction(item.actionId).category === 'alternative'),
-    candidateActionIds: selected,
+    candidateActionIds: items.map((item) => item.actionId),
     redFlagCopy: effectiveEscalation >= 4 || hasSensitiveMember ? RED_FLAG_COPY : '',
     medicalDisclaimer: MEDICAL_DISCLAIMER,
     routineWindow: findRoutineWindow(snapshot, now),
@@ -115,15 +122,7 @@ function findAction(actionId: string): Action {
   return action;
 }
 
-function toPlanItem(
-  action: Action,
-  priority: number,
-  profile: Profile,
-  snapshot: AirQualitySnapshot,
-  effectiveEscalation: number
-): BasicPlanItem {
-  void profile;
-  void effectiveEscalation;
+function toPlanItem(action: Action, priority: number, pm25: number): BasicPlanItem {
   return {
     actionId: action.id,
     title: action.title,
@@ -131,7 +130,7 @@ function toPlanItem(
     timeOfDay: action.timeOfDay,
     optional: isOptionalPurchase(action),
     redFlag: action.redFlagTrigger,
-    explanation: explainAction(action, snapshot.pm25),
+    explanation: explainAction(action, pm25),
   };
 }
 

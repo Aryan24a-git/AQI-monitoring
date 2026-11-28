@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CACHE_TTL_MS, WAQI_MAX_DISTANCE_KM, WAQI_STALE_HOURS } from '@/domain/constants';
 import { LruCache } from '../cache/lru';
 import { ProviderError, fetchWithTimeout, retryWithBackoff } from '../http/resilience';
 
@@ -66,7 +67,7 @@ export function validateWaqiReading(
   if (!reading.hasPm25) {
     return { valid: false, reason: 'missing_pm25' };
   }
-  if (reading.distanceKm != null && reading.distanceKm > 25) {
+  if (reading.distanceKm != null && reading.distanceKm > WAQI_MAX_DISTANCE_KM) {
     return { valid: false, reason: 'far' };
   }
   let ageHours: number | undefined;
@@ -74,7 +75,7 @@ export function validateWaqiReading(
     const parsedMs = Date.parse(reading.timeIso);
     if (Number.isFinite(parsedMs)) {
       ageHours = (nowMs - parsedMs) / 3_600_000;
-      if (ageHours > 3) {
+      if (ageHours > WAQI_STALE_HOURS) {
         return { valid: false, reason: 'stale', ageHours };
       }
     }
@@ -84,7 +85,7 @@ export function validateWaqiReading(
 
 const STATION_CACHE = new LruCache<string, WaqiStationReading>({
   maxEntries: 200,
-  ttlMs: 15 * 60 * 1000,
+  ttlMs: CACHE_TTL_MS,
 });
 
 /** @testonly */
@@ -136,6 +137,56 @@ export function usAqiToPm10(aqi: number): number {
   );
 }
 
+function optMap(val: number | undefined, fn: (n: number) => number): number | undefined {
+  return val != null ? fn(val) : undefined;
+}
+
+function readStationMeta(d: z.infer<typeof WaqiDataSchema>, lat: number, lon: number) {
+  const geo = d.city?.geo;
+  return {
+    stationName: d.city?.name,
+    timeIso: d.time?.iso ?? d.time?.s,
+    distanceKm: geo ? haversineKm(lat, lon, geo[0], geo[1]) : undefined,
+  };
+}
+
+function buildStationMetrics(
+  d: z.infer<typeof WaqiDataSchema>,
+  pm25Sub: number,
+  lat: number,
+  lon: number
+): WaqiStationReading {
+  const rawAqi = Number(d.aqi);
+  const iaqi = d.iaqi ?? {};
+  return {
+    aqi: Math.round(Number.isFinite(rawAqi) ? rawAqi : pm25Sub),
+    pm25: usAqiToPm25(pm25Sub),
+    pm10: optMap(iaqi.pm10?.v, usAqiToPm10),
+    hasPm25: Number.isFinite(iaqi.pm25?.v),
+    no2: optMap(iaqi.no2?.v, Math.round),
+    windKmh: optMap(iaqi.w?.v, (w) => Math.max(1, Math.round(w * 3.6))),
+    ...readStationMeta(d, lat, lon),
+  };
+}
+
+function parseWaqiStationData(raw: unknown, lat: number, lon: number): WaqiStationReading {
+  const envParsed = WaqiResponseSchema.safeParse(raw);
+  if (!envParsed.success || envParsed.data.status !== 'ok') {
+    throw new ProviderError('HTTP_ERROR', 'WAQI station returned non-ok status');
+  }
+  const dParsed = WaqiDataSchema.safeParse(envParsed.data.data);
+  if (!dParsed.success) throw new ProviderError('SCHEMA_ERROR', 'WAQI data schema mismatch');
+
+  const d = dParsed.data;
+  const rawAqi = Number(d.aqi);
+  const pm25Sub = d.iaqi?.pm25?.v ?? (Number.isFinite(rawAqi) ? rawAqi : NaN);
+  if (!Number.isFinite(pm25Sub)) {
+    throw new ProviderError('SCHEMA_ERROR', 'WAQI station lacked PM2.5 or AQI reading');
+  }
+  return buildStationMetrics(d, pm25Sub, lat, lon);
+}
+
+/** Fetches the nearest WAQI station reading for the given coordinates. */
 export async function fetchWaqiStation(
   lat: number,
   lon: number,
@@ -156,35 +207,7 @@ export async function fetchWaqiStation(
   });
   if (!res.ok) throw new ProviderError('HTTP_ERROR', `WAQI HTTP ${res.status}`);
 
-  const envParsed = WaqiResponseSchema.safeParse(await res.json());
-  if (!envParsed.success || envParsed.data.status !== 'ok') {
-    throw new ProviderError('HTTP_ERROR', 'WAQI station returned non-ok status');
-  }
-  const dParsed = WaqiDataSchema.safeParse(envParsed.data.data);
-  if (!dParsed.success) throw new ProviderError('SCHEMA_ERROR', 'WAQI data schema mismatch');
-
-  const d = dParsed.data;
-  const rawAqi = Number(d.aqi);
-  const hasPm25 = d.iaqi?.pm25?.v != null && Number.isFinite(d.iaqi.pm25.v);
-  const pm25Sub = d.iaqi?.pm25?.v ?? (Number.isFinite(rawAqi) ? rawAqi : NaN);
-  if (!Number.isFinite(pm25Sub)) {
-    throw new ProviderError('SCHEMA_ERROR', 'WAQI station lacked PM2.5 or AQI reading');
-  }
-
-  const pm25 = usAqiToPm25(pm25Sub);
-  const pm10 = d.iaqi?.pm10?.v != null ? usAqiToPm10(d.iaqi.pm10.v) : undefined;
-  const distanceKm = d.city?.geo ? haversineKm(lat, lon, d.city.geo[0], d.city.geo[1]) : undefined;
-  const reading: WaqiStationReading = {
-    aqi: Number.isFinite(rawAqi) ? Math.round(rawAqi) : Math.round(pm25Sub),
-    pm25,
-    pm10,
-    hasPm25,
-    no2: d.iaqi?.no2?.v != null ? Math.round(d.iaqi.no2.v) : undefined,
-    windKmh: d.iaqi?.w?.v != null ? Math.max(1, Math.round(d.iaqi.w.v * 3.6)) : undefined,
-    stationName: d.city?.name,
-    timeIso: d.time?.iso ?? d.time?.s,
-    distanceKm,
-  };
+  const reading = parseWaqiStationData(await res.json(), lat, lon);
   STATION_CACHE.set(key, reading);
   return reading;
 }

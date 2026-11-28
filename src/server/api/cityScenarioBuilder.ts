@@ -99,15 +99,44 @@ export function buildScenarioFromData(
   };
 }
 
+function pickOptionalNum(
+  primary: number | undefined,
+  fallback: number | undefined
+): number | undefined {
+  return primary !== undefined ? primary : fallback;
+}
+
+function resolveOptionalMeasurements(waqi: WaqiStationReading, meteo: MeteoPayload | null) {
+  const pm10 = pickOptionalNum(waqi.pm10, meteo ? Math.round(meteo.aq.current.pm10) : undefined);
+  const meteoNo2 = meteo?.aq.current.nitrogen_dioxide;
+  const no2 = pickOptionalNum(waqi.no2, meteoNo2 != null ? Math.round(meteoNo2) : undefined);
+  const wind = pickOptionalNum(
+    waqi.windKmh,
+    meteo ? Math.max(1, Math.round(meteo.wx.current.wind_speed_10m)) : undefined
+  );
+  return {
+    ...(pm10 !== undefined ? { pm10 } : {}),
+    ...(no2 !== undefined ? { no2 } : {}),
+    ...(wind !== undefined ? { wind } : {}),
+  };
+}
+
+function resolveMeteoHourly(meteo: MeteoPayload | null) {
+  const pmResult = meteo ? extractHourlySeries(meteo.aq.hourly?.pm2_5) : null;
+  const windResult = meteo ? extractHourlySeries(meteo.wx.hourly?.wind_speed_10m) : null;
+  if (pmResult?.ok && windResult?.ok) {
+    return { hourlyPM25: pmResult.series, hourlyWind: windResult.series };
+  }
+  return { hourlyPM25: [], hourlyWind: [], hourlyError: 'Hourly forecast unavailable' };
+}
+
+/** Builds a LocationScenario anchored to a validated WAQI station observation. */
 export function buildWaqiScenario(
   city: string,
   admin1: string | undefined,
   waqi: WaqiStationReading,
   meteo: MeteoPayload | null
 ): LocationScenario {
-  const pmResult = meteo ? extractHourlySeries(meteo.aq.hourly?.pm2_5) : null;
-  const windResult = meteo ? extractHourlySeries(meteo.wx.hourly?.wind_speed_10m) : null;
-  const hasHourly = Boolean(pmResult?.ok && windResult?.ok);
   const obsTime = formatObservationTime(waqi.timeIso);
   return {
     id: `live-${city.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
@@ -116,35 +145,20 @@ export function buildWaqiScenario(
     subtitle: `Station reading (WAQI) · ${obsTime}`,
     sourceLabel: 'Station observation (WAQI / Air Quality Open Data)',
     pm25: waqi.pm25,
-    ...(waqi.pm10 !== undefined
-      ? { pm10: waqi.pm10 }
-      : meteo
-        ? { pm10: Math.round(meteo.aq.current.pm10) }
-        : {}),
-    ...(waqi.no2 !== undefined
-      ? { no2: waqi.no2 }
-      : meteo?.aq.current.nitrogen_dioxide != null
-        ? { no2: Math.round(meteo.aq.current.nitrogen_dioxide) }
-        : {}),
-    ...(waqi.windKmh !== undefined
-      ? { wind: waqi.windKmh }
-      : meteo
-        ? { wind: Math.max(1, Math.round(meteo.wx.current.wind_speed_10m)) }
-        : {}),
-    hourlyPM25: hasHourly && pmResult?.ok ? pmResult.series : [],
-    hourlyWind: hasHourly && windResult?.ok ? windResult.series : [],
-    ...(hasHourly ? {} : { hourlyError: 'Hourly forecast unavailable' }),
+    ...resolveOptionalMeasurements(waqi, meteo),
+    ...resolveMeteoHourly(meteo),
     isSynthetic: false,
   };
 }
 
+/** Combines Open-Meteo model data with an optional validated WAQI station observation. */
 export function buildCombinedScenario(
-  city: string,
-  admin1: string | undefined,
+  target: { city: string; admin1?: string },
   meteo: MeteoPayload,
   waqi: WaqiStationReading | null,
   nowMs = Date.now()
 ): LocationScenario {
+  const { city, admin1 } = target;
   const base = buildScenarioFromData(city, admin1, meteo);
   if (!waqi) return base;
 

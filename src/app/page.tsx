@@ -87,10 +87,36 @@ function DashboardTabs({
   );
 }
 
+function MainContent({
+  state,
+  actions,
+}: {
+  state: ReturnType<typeof useVayuSaathi>;
+  actions: ReturnType<typeof useAppActions>;
+}) {
+  const ready = state.location && state.impact && state.playbook;
+  return (
+    <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 space-y-6">
+      {state.location?.isSynthetic && <DemoBanner onClear={state.clearAllData} />}
+      {!ready || state.isLoadingCity ? (
+        <LandingEmptyState
+          isLoading={state.isLoadingCity}
+          error={state.cityError}
+          lastCityQuery={state.lastCityQuery}
+          onFetchCity={state.loadLiveCity}
+          onUseGeolocation={actions.handleUseGeolocation}
+          onManualPm25={actions.handleManualPm25}
+        />
+      ) : (
+        <DashboardTabs state={state} actions={actions} />
+      )}
+    </main>
+  );
+}
+
 function VayuSaathiApp() {
   const state = useVayuSaathi();
   const actions = useAppActions(state);
-  const ready = state.location && state.impact && state.playbook;
 
   return (
     <div className="font-sans antialiased overflow-x-hidden pb-24 md:pb-12 bg-[#F7F6F2] min-h-screen">
@@ -102,21 +128,7 @@ function VayuSaathiApp() {
         onOpenProfile={() => state.setIsProfileOpen(true)}
         onFetchLiveCity={state.loadLiveCity}
       />
-      <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 space-y-6">
-        {state.location?.isSynthetic && <DemoBanner onClear={state.clearAllData} />}
-        {!ready || state.isLoadingCity ? (
-          <LandingEmptyState
-            isLoading={state.isLoadingCity}
-            error={state.cityError}
-            lastCityQuery={state.lastCityQuery}
-            onFetchCity={state.loadLiveCity}
-            onUseGeolocation={actions.handleUseGeolocation}
-            onManualPm25={actions.handleManualPm25}
-          />
-        ) : (
-          <DashboardTabs state={state} actions={actions} />
-        )}
-      </main>
+      <MainContent state={state} actions={actions} />
       <AppFooter />
       <MobileNav activeTab={state.activeTab} onTabChange={state.setActiveTab} />
       <ProfileDrawer

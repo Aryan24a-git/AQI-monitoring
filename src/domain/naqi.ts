@@ -4,6 +4,7 @@
 
 import { ok, err, type Result } from './result';
 import { PM25_PER_CIGARETTE } from './emissions';
+import { VENT_PM25_WEIGHT, VENT_WIND_WEIGHT } from './constants';
 
 export interface CpcbBand {
   max: number;
@@ -124,12 +125,30 @@ export interface NaqiError {
   message: string;
 }
 
+function areFinitePollutants(pm25: number, pm10?: number, no2?: number): boolean {
+  return (
+    Number.isFinite(pm25) &&
+    (pm10 === undefined || Number.isFinite(pm10)) &&
+    (no2 === undefined || Number.isFinite(no2))
+  );
+}
+
+function pickDominantPollutant(
+  subPM25: number,
+  subPM10?: number,
+  subNO2?: number
+): { naqi: number; dominant: 'PM2.5' | 'PM10' | 'NO₂' } {
+  const candidates: Array<{ label: 'PM2.5' | 'PM10' | 'NO₂'; val: number }> = [
+    { label: 'PM2.5', val: subPM25 },
+  ];
+  if (subPM10 !== undefined) candidates.push({ label: 'PM10', val: subPM10 });
+  if (subNO2 !== undefined) candidates.push({ label: 'NO₂', val: subNO2 });
+  const top = candidates.reduce((best, cur) => (cur.val > best.val ? cur : best));
+  return { naqi: Math.min(500, Math.max(1, top.val)), dominant: top.label };
+}
+
 export function calculateCPCBNAQI(pm25: number, pm10?: number, no2?: number): NaqiResult {
-  if (
-    !Number.isFinite(pm25) ||
-    (pm10 !== undefined && !Number.isFinite(pm10)) ||
-    (no2 !== undefined && !Number.isFinite(no2))
-  ) {
+  if (!areFinitePollutants(pm25, pm10, no2)) {
     throw new TypeError(
       `CPCB NAQI inputs must be finite numbers; received pm25=${pm25}, pm10=${pm10}, no2=${no2}`
     );
@@ -138,18 +157,7 @@ export function calculateCPCBNAQI(pm25: number, pm10?: number, no2?: number): Na
   const subPM25 = Math.round(calcSubIndex(pm25, PM25_BREAKPOINTS));
   const subPM10 = pm10 !== undefined ? Math.round(calcSubIndex(pm10, PM10_BREAKPOINTS)) : undefined;
   const subNO2 = no2 !== undefined ? Math.round(calcSubIndex(no2, NO2_BREAKPOINTS)) : undefined;
-
-  let naqi = subPM25;
-  let dominant: 'PM2.5' | 'PM10' | 'NO₂' = 'PM2.5';
-  if (subPM10 !== undefined && subPM10 > naqi) {
-    naqi = subPM10;
-    dominant = 'PM10';
-  }
-  if (subNO2 !== undefined && subNO2 > naqi) {
-    naqi = subNO2;
-    dominant = 'NO₂';
-  }
-  naqi = Math.min(500, Math.max(1, naqi));
+  const { naqi, dominant } = pickDominantPollutant(subPM25, subPM10, subNO2);
   const band = CPCB_BANDS.find((b) => naqi <= b.max) || CPCB_BANDS[CPCB_BANDS.length - 1];
   const cigsPerDay = Number((Math.max(0, pm25) / PM25_PER_CIGARETTE.value).toFixed(1));
   const isPm25Only = pm10 === undefined && no2 === undefined;
@@ -174,11 +182,7 @@ export function safeCalculateCPCBNAQI(
   pm10?: number,
   no2?: number
 ): Result<NaqiResult, NaqiError> {
-  if (
-    !Number.isFinite(pm25) ||
-    (pm10 !== undefined && !Number.isFinite(pm10)) ||
-    (no2 !== undefined && !Number.isFinite(no2))
-  ) {
+  if (!areFinitePollutants(pm25, pm10, no2)) {
     return err({
       code: 'INVALID_INPUT',
       message: 'Pollutant concentrations must be finite numbers',
@@ -206,45 +210,50 @@ export interface VentilationWindow {
   heuristicNote?: string;
 }
 
-export function findSafeVentilationWindow(
+function scoreVentilationHours(
   hourlyPM25: readonly number[],
   hourlyWind: readonly number[],
-  currentHour?: number
-): VentilationWindow {
+  startSearch: number
+): number {
   const minPM = Math.min(...hourlyPM25);
-  const maxPM = Math.max(...hourlyPM25);
-  const pmRange = Math.max(1, maxPM - minPM);
+  const pmRange = Math.max(1, Math.max(...hourlyPM25) - minPM);
   const minW = Math.min(...hourlyWind);
-  const maxW = Math.max(...hourlyWind);
-  const wRange = Math.max(1, maxW - minW);
-
-  const nowHour = currentHour ?? 12;
-  const isPastToday = nowHour >= 16;
-  const startSearch = isPastToday ? 11 : Math.max(10, nowHour);
-  const endSearch = 15;
-
+  const wRange = Math.max(1, Math.max(...hourlyWind) - minW);
   let bestStart = startSearch;
   let bestScore = Infinity;
 
-  for (let h = startSearch; h <= endSearch; h++) {
+  for (let h = startSearch; h <= 15; h += 1) {
     const nextH = Math.min(23, h + 1);
     const avgPM = (hourlyPM25[h] + hourlyPM25[nextH]) / 2;
     const avgWind = (hourlyWind[h] + hourlyWind[nextH]) / 2;
-    const score = ((avgPM - minPM) / pmRange) * 0.75 + (1 - (avgWind - minW) / wRange) * 0.25;
+    const score =
+      ((avgPM - minPM) / pmRange) * VENT_PM25_WEIGHT +
+      (1 - (avgWind - minW) / wRange) * VENT_WIND_WEIGHT;
     if (score < bestScore) {
       bestScore = score;
       bestStart = h;
     }
   }
+  return bestStart;
+}
 
+/** Finds the optimal 2-hour daytime cross-ventilation window from 24-hour PM2.5 and wind curves. */
+export function findSafeVentilationWindow(
+  hourlyPM25: readonly number[],
+  hourlyWind: readonly number[],
+  currentHour?: number
+): VentilationWindow {
+  const nowHour = currentHour ?? 12;
+  const isPastToday = nowHour >= 16;
+  const startSearch = isPastToday ? 11 : Math.max(10, nowHour);
+  const bestStart = scoreVentilationHours(hourlyPM25, hourlyWind, startSearch);
   const endHour = Math.min(23, bestStart + 2);
   const sealHour = Math.min(18, endHour + 2);
-  const avgPM = Math.round((hourlyPM25[bestStart] + hourlyPM25[Math.min(23, bestStart + 1)]) / 2);
-  const avgW = Number(
-    (((hourlyWind[bestStart] + hourlyWind[Math.min(23, bestStart + 1)]) / 2) as number).toFixed(1)
-  );
-
+  const nextIdx = Math.min(23, bestStart + 1);
+  const avgPM = Math.round((hourlyPM25[bestStart] + hourlyPM25[nextIdx]) / 2);
+  const avgW = Number(((hourlyWind[bestStart] + hourlyWind[nextIdx]) / 2).toFixed(1));
   const prefix = isPastToday ? 'Tomorrow ' : '';
+
   return {
     startHour: bestStart,
     endHour,

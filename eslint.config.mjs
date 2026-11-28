@@ -10,6 +10,14 @@ const eslintConfig = [
       'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
     },
   },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'max-lines-per-function': ['warn', { max: 40, skipBlankLines: true, skipComments: true }],
+      complexity: ['warn', 10],
+      'max-params': ['warn', 4],
+    },
+  },
 ];
 
 export default eslintConfig;

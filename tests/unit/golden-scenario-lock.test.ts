@@ -22,10 +22,14 @@ describe('Golden Scenario & Plan Lock (pre-sprint baseline)', () => {
   it('locks buildCombinedScenario across 8 inputs', () => {
     const nowMs = Date.UTC(2026, 0, 15, 8, 0, 0);
     const cases = [
-      buildCombinedScenario('Delhi', 'Delhi', makeMeteo(200, 300, 60, 4), null, nowMs),
       buildCombinedScenario(
-        'Delhi',
-        'Delhi',
+        { city: 'Delhi', admin1: 'Delhi' },
+        makeMeteo(200, 300, 60, 4),
+        null,
+        nowMs
+      ),
+      buildCombinedScenario(
+        { city: 'Delhi', admin1: 'Delhi' },
         makeMeteo(200, 300, 60, 4),
         {
           aqi: 320,
@@ -41,8 +45,7 @@ describe('Golden Scenario & Plan Lock (pre-sprint baseline)', () => {
         nowMs
       ),
       buildCombinedScenario(
-        'Patna',
-        'Bihar',
+        { city: 'Patna', admin1: 'Bihar' },
         makeMeteo(150, 240, 40, 6),
         {
           aqi: 190,
@@ -58,8 +61,7 @@ describe('Golden Scenario & Plan Lock (pre-sprint baseline)', () => {
         nowMs
       ),
       buildCombinedScenario(
-        'Noida',
-        'UP',
+        { city: 'Noida', admin1: 'UP' },
         makeMeteo(180, 270, 50, 5),
         {
           aqi: 240,
@@ -75,8 +77,7 @@ describe('Golden Scenario & Plan Lock (pre-sprint baseline)', () => {
         nowMs
       ),
       buildCombinedScenario(
-        'Kolkata',
-        'WB',
+        { city: 'Kolkata', admin1: 'WB' },
         makeMeteo(95, 160, 42, 8),
         {
           aqi: 155,
@@ -91,9 +92,24 @@ describe('Golden Scenario & Plan Lock (pre-sprint baseline)', () => {
         },
         nowMs
       ),
-      buildCombinedScenario('Bengaluru', 'KA', makeMeteo(45, 80, 30, 12), null, nowMs),
-      buildCombinedScenario('Jaipur', 'RJ', makeMeteo(110, 190, 35, 7), null, nowMs),
-      buildCombinedScenario('Lucknow', 'UP', makeMeteo(175, 260, 55, 5), null, nowMs),
+      buildCombinedScenario(
+        { city: 'Bengaluru', admin1: 'KA' },
+        makeMeteo(45, 80, 30, 12),
+        null,
+        nowMs
+      ),
+      buildCombinedScenario(
+        { city: 'Jaipur', admin1: 'RJ' },
+        makeMeteo(110, 190, 35, 7),
+        null,
+        nowMs
+      ),
+      buildCombinedScenario(
+        { city: 'Lucknow', admin1: 'UP' },
+        makeMeteo(175, 260, 55, 5),
+        null,
+        nowMs
+      ),
     ];
     expect(cases).toMatchSnapshot();
   });

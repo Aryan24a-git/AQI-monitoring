@@ -3,6 +3,21 @@ import { useEffect, useRef } from 'react';
 const FOCUSABLE_SELECTOR =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+function trapTabKey(e: KeyboardEvent, container: HTMLDivElement) {
+  const elements = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+  if (elements.length === 0) return;
+  const first = elements[0];
+  const last = elements[elements.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
+}
+
+/** Traps keyboard focus inside an open modal/drawer and restores focus on close. */
 export function useFocusTrap(
   isOpen: boolean,
   containerRef: React.RefObject<HTMLDivElement | null>,
@@ -12,36 +27,19 @@ export function useFocusTrap(
 
   useEffect(() => {
     if (!isOpen) return;
-
     previousActiveElement.current = document.activeElement as HTMLElement | null;
     const container = containerRef.current;
     if (!container) return;
 
     const focusable = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-    if (focusable.length > 0) {
-      focusable[0].focus();
-    }
+    if (focusable.length > 0) focusable[0].focus();
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
-        return;
+        return onClose();
       }
-      if (e.key === 'Tab') {
-        const elements = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-        if (elements.length === 0) return;
-        const first = elements[0];
-        const last = elements[elements.length - 1];
-
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
+      if (e.key === 'Tab') trapTabKey(e, container);
     };
 
     window.addEventListener('keydown', handleKeyDown);

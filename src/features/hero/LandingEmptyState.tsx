@@ -10,7 +10,7 @@ interface LandingEmptyStateProps {
   error: string | null;
   lastCityQuery: string | null;
   onFetchCity: (city: string) => Promise<void>;
-  onUseGeolocation: () => Promise<void>;
+  onUseGeolocation: () => void | Promise<void>;
   onManualPm25: (pm25: number) => void;
 }
 
@@ -33,17 +33,14 @@ function LoadingSkeleton() {
   );
 }
 
-function ErrorAlert({
-  error,
-  lastCityQuery,
-  onRetry,
-  onOpenManual,
-}: {
+interface ErrorAlertProps {
   error: string;
   lastCityQuery: string | null;
   onRetry: (c: string) => void;
   onOpenManual: () => void;
-}) {
+}
+
+function ErrorAlert({ error, lastCityQuery, onRetry, onOpenManual }: ErrorAlertProps) {
   return (
     <div
       role="alert"
@@ -108,22 +105,19 @@ function ManualPmForm({ onManualPm25 }: { onManualPm25: (pm25: number) => void }
   );
 }
 
-function CitySearchBar({
-  onSubmit,
-  onUseGeolocation,
-}: {
+interface CitySearchBarProps {
   onSubmit: (city: string) => void;
   onUseGeolocation: () => void;
-}) {
+}
+
+function CitySearchBar({ onSubmit, onUseGeolocation }: CitySearchBarProps) {
   const [query, setQuery] = useState('');
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) onSubmit(query.trim());
+  };
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        if (query.trim()) onSubmit(query.trim());
-      }}
-      className="flex flex-col sm:flex-row gap-2.5"
-    >
+    <form onSubmit={handleFormSubmit} className="flex flex-col sm:flex-row gap-2.5">
       <div className="relative flex-1">
         <MapPin className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
         <input
@@ -171,6 +165,46 @@ function QuickCityRow({ onFetchCity }: { onFetchCity: (city: string) => void }) 
   );
 }
 
+function LandingHeading() {
+  return (
+    <div className="space-y-1">
+      <h2 className="font-bold text-xl text-slate-900">
+        Check live winter air quality for your city
+      </h2>
+      <p className="text-sm text-slate-600">
+        Search any Indian city to fetch live WAQI station air quality &amp; 24-hour dispersion data,
+        or use your approximate location.
+      </p>
+    </div>
+  );
+}
+
+function ManualEntrySection({
+  showManual,
+  onToggle,
+  onManualPm25,
+}: {
+  showManual: boolean;
+  onToggle: () => void;
+  onManualPm25: (pm25: number) => void;
+}) {
+  return (
+    <>
+      <div className="pt-2 border-t border-stone-100 flex flex-wrap items-center gap-4 text-xs">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="inline-flex items-center gap-1.5 font-semibold text-slate-700 hover:text-teal-800"
+        >
+          <Edit3 className="w-3.5 h-3.5" /> Enter AQI manually
+        </button>
+      </div>
+      {showManual && <ManualPmForm onManualPm25={onManualPm25} />}
+    </>
+  );
+}
+
+/** Empty-state city search, geolocation, and manual PM2.5 entry card. */
 export function LandingEmptyState({
   isLoading,
   error,
@@ -180,7 +214,6 @@ export function LandingEmptyState({
   onManualPm25,
 }: LandingEmptyStateProps) {
   const [showManual, setShowManual] = useState(false);
-
   if (isLoading) return <LoadingSkeleton />;
 
   return (
@@ -188,15 +221,7 @@ export function LandingEmptyState({
       aria-label="Select your city for live air quality"
       className="bg-white rounded-2xl border border-stone-200 shadow-sm p-6 space-y-5"
     >
-      <div className="space-y-1">
-        <h2 className="font-bold text-xl text-slate-900">
-          Check live winter air quality for your city
-        </h2>
-        <p className="text-sm text-slate-600">
-          Search any Indian city to fetch live WAQI station air quality &amp; 24-hour dispersion
-          data, or use your approximate location.
-        </p>
-      </div>
+      <LandingHeading />
       {error && (
         <ErrorAlert
           error={error}
@@ -210,16 +235,11 @@ export function LandingEmptyState({
         onUseGeolocation={() => void onUseGeolocation()}
       />
       <QuickCityRow onFetchCity={(c) => void onFetchCity(c)} />
-      <div className="pt-2 border-t border-stone-100 flex flex-wrap items-center gap-4 text-xs">
-        <button
-          type="button"
-          onClick={() => setShowManual((v) => !v)}
-          className="inline-flex items-center gap-1.5 font-semibold text-slate-700 hover:text-teal-800"
-        >
-          <Edit3 className="w-3.5 h-3.5" /> Enter AQI manually
-        </button>
-      </div>
-      {showManual && <ManualPmForm onManualPm25={onManualPm25} />}
+      <ManualEntrySection
+        showManual={showManual}
+        onToggle={() => setShowManual((v) => !v)}
+        onManualPm25={onManualPm25}
+      />
     </section>
   );
 }

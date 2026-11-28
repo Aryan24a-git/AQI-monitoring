@@ -90,8 +90,46 @@ function JumpButtons({
   );
 }
 
-export function DispersionChart({ location, vent, bandColor }: DispersionChartProps) {
-  const [activeHour, setActiveHour] = useState<number>(vent?.startHour ?? 12);
+function ChartHeader({
+  isSynthetic,
+  windowLabel,
+  onJumpToWindow,
+}: {
+  isSynthetic?: boolean;
+  windowLabel: string;
+  onJumpToWindow: () => void;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+      <div>
+        <div className="flex items-center gap-2">
+          <h3 className="font-bold text-base text-slate-900">
+            24-Hour Thermal Inversion &amp; Ventilation Curve
+          </h3>
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+            <Sparkles className="w-3 h-3" /> Interactive
+          </span>
+        </div>
+        <p className="text-xs text-slate-600 mt-0.5">
+          {isSynthetic
+            ? 'Simulated 24-hour curve for demo scenario.'
+            : 'Hourly forecast: model (Open-Meteo). Hover or scrub across any hour to inspect particulate buildup.'}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={onJumpToWindow}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold shrink-0 transition"
+      >
+        <DoorOpen className="w-4 h-4" />
+        <span>Open: {windowLabel}</span>
+      </button>
+    </div>
+  );
+}
+
+function useChartScrubbing(initialHour: number) {
+  const [activeHour, setActiveHour] = useState<number>(initialHour);
   const [isHovering, setIsHovering] = useState<boolean>(false);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -99,67 +137,62 @@ export function DispersionChart({ location, vent, bandColor }: DispersionChartPr
     if (!svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
     const relX = (e.clientX - rect.left) / rect.width;
-    setActiveHour(
-      Math.min(
-        23,
-        Math.max(0, Math.round(((relX * CHART_W - PAD_L) / (CHART_W - PAD_L - PAD_R)) * 23))
-      )
-    );
+    const rawHour = Math.round(((relX * CHART_W - PAD_L) / (CHART_W - PAD_L - PAD_R)) * 23);
+    setActiveHour(Math.min(23, Math.max(0, rawHour)));
     setIsHovering(true);
   }, []);
-
-  if (
-    !vent ||
-    location.hourlyError ||
-    location.hourlyPM25.length < 24 ||
-    location.hourlyWind.length < 24
-  ) {
-    return <UnavailableChartCard />;
-  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowRight') setActiveHour((h) => Math.min(23, h + 1));
     else if (e.key === 'ArrowLeft') setActiveHour((h) => Math.max(0, h - 1));
   };
 
+  return {
+    activeHour,
+    setActiveHour,
+    isHovering,
+    setIsHovering,
+    svgRef,
+    handlePointer,
+    handleKeyDown,
+  };
+}
+
+function hasChartData(
+  location: LocationScenario,
+  vent: VentilationWindow | null
+): vent is VentilationWindow {
+  return Boolean(
+    vent &&
+    !location.hourlyError &&
+    location.hourlyPM25.length >= 24 &&
+    location.hourlyWind.length >= 24
+  );
+}
+
+/** Interactive 24-hour PM2.5 and wind dispersion chart with keyboard & pointer scrubbing. */
+export function DispersionChart({ location, vent, bandColor }: DispersionChartProps) {
+  const scrub = useChartScrubbing(vent?.startHour ?? 12);
+  if (!hasChartData(location, vent)) return <UnavailableChartCard />;
+
   return (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-        <div>
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-base text-slate-900">
-              24-Hour Thermal Inversion &amp; Ventilation Curve
-            </h3>
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
-              <Sparkles className="w-3 h-3" /> Interactive
-            </span>
-          </div>
-          <p className="text-xs text-slate-600 mt-0.5">
-            {location.isSynthetic
-              ? 'Simulated 24-hour curve for demo scenario.'
-              : 'Hourly forecast: model (Open-Meteo). Hover or scrub across any hour to inspect particulate buildup.'}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setActiveHour(vent.startHour)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold shrink-0 transition"
-        >
-          <DoorOpen className="w-4 h-4" />
-          <span>Open: {vent.windowLabel}</span>
-        </button>
-      </div>
+      <ChartHeader
+        isSynthetic={location.isSynthetic}
+        windowLabel={vent.windowLabel}
+        onJumpToWindow={() => scrub.setActiveHour(vent.startHour)}
+      />
       <HourStatusBar
-        activeHour={activeHour}
+        activeHour={scrub.activeHour}
         vent={vent}
-        pmValue={location.hourlyPM25[activeHour]}
-        windValue={location.hourlyWind[activeHour]}
+        pmValue={location.hourlyPM25[scrub.activeHour]}
+        windValue={location.hourlyWind[scrub.activeHour]}
       />
       <div
         role="region"
         className="relative w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-teal-600 rounded-xl"
         tabIndex={0}
-        onKeyDown={handleKeyDown}
+        onKeyDown={scrub.handleKeyDown}
         aria-label="24-hour smog dispersion chart. Use left and right arrow keys to step."
       >
         <DispersionChartSvg
@@ -167,14 +200,12 @@ export function DispersionChart({ location, vent, bandColor }: DispersionChartPr
           windData={location.hourlyWind}
           vent={vent}
           bandColor={bandColor}
-          activeHour={activeHour}
-          isHovering={isHovering}
-          svgRef={svgRef}
-          onPointer={handlePointer}
-          onHoverChange={setIsHovering}
+          {...scrub}
+          onPointer={scrub.handlePointer}
+          onHoverChange={scrub.setIsHovering}
         />
       </div>
-      <JumpButtons vent={vent} activeHour={activeHour} onSelect={setActiveHour} />
+      <JumpButtons vent={vent} activeHour={scrub.activeHour} onSelect={scrub.setActiveHour} />
       <VentilationCallouts vent={vent} />
     </div>
   );

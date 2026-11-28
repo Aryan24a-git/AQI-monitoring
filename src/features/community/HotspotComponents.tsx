@@ -12,6 +12,80 @@ interface HotspotFormProps {
   onSubmit: (e: React.FormEvent) => void;
 }
 
+function HotspotCategorySelect({
+  category,
+  setCategory,
+}: {
+  category: HotspotReport['category'];
+  setCategory: (cat: HotspotReport['category']) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor="hotspot-cat" className="block text-xs font-semibold text-slate-700 mb-1">
+        Issue Category
+      </label>
+      <select
+        id="hotspot-cat"
+        value={category}
+        onChange={(e) => setCategory(e.target.value as HotspotReport['category'])}
+        className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-600"
+      >
+        <option value="Open Waste Burning">Open Waste / Leaf Burning</option>
+        <option value="Uncovered Construction Dust">Uncovered Construction Dust</option>
+        <option value="Traffic Choke Point">Severe Traffic Choke / Idling</option>
+      </select>
+    </div>
+  );
+}
+
+interface HotspotTextFieldsProps {
+  locality: string;
+  setLocality: (loc: string) => void;
+  description: string;
+  setDescription: (desc: string) => void;
+}
+
+function HotspotTextFields({
+  locality,
+  setLocality,
+  description,
+  setDescription,
+}: HotspotTextFieldsProps) {
+  return (
+    <>
+      <div>
+        <label htmlFor="hotspot-loc" className="block text-xs font-semibold text-slate-700 mb-1">
+          Locality / Landmark
+        </label>
+        <input
+          id="hotspot-loc"
+          type="text"
+          required
+          value={locality}
+          onChange={(e) => setLocality(e.target.value)}
+          placeholder="e.g. Sector 18 Metro Gate 2"
+          className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-600"
+        />
+      </div>
+      <div>
+        <label htmlFor="hotspot-desc" className="block text-xs font-semibold text-slate-700 mb-1">
+          Brief Note
+        </label>
+        <textarea
+          id="hotspot-desc"
+          rows={2}
+          required
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="e.g. Dry leaves being burned near park boundary wall..."
+          className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-600"
+        />
+      </div>
+    </>
+  );
+}
+
+/** Form for recording a device-local smog hotspot report. */
 export function HotspotForm({
   category,
   setCategory,
@@ -30,53 +104,13 @@ export function HotspotForm({
         <PlusCircle className="w-4 h-4 text-teal-700" />
         <span>Report Local Hotspot</span>
       </h4>
-
-      <div>
-        <label htmlFor="hotspot-cat" className="block text-xs font-semibold text-slate-700 mb-1">
-          Issue Category
-        </label>
-        <select
-          id="hotspot-cat"
-          value={category}
-          onChange={(e) => setCategory(e.target.value as HotspotReport['category'])}
-          className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-600"
-        >
-          <option value="Open Waste Burning">Open Waste / Leaf Burning</option>
-          <option value="Uncovered Construction Dust">Uncovered Construction Dust</option>
-          <option value="Traffic Choke Point">Severe Traffic Choke / Idling</option>
-        </select>
-      </div>
-
-      <div>
-        <label htmlFor="hotspot-loc" className="block text-xs font-semibold text-slate-700 mb-1">
-          Locality / Landmark
-        </label>
-        <input
-          id="hotspot-loc"
-          type="text"
-          required
-          value={locality}
-          onChange={(e) => setLocality(e.target.value)}
-          placeholder="e.g. Sector 18 Metro Gate 2"
-          className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-600"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="hotspot-desc" className="block text-xs font-semibold text-slate-700 mb-1">
-          Brief Note
-        </label>
-        <textarea
-          id="hotspot-desc"
-          rows={2}
-          required
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="e.g. Dry leaves being burned near park boundary wall..."
-          className="w-full px-3 py-2 text-xs bg-white border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-600"
-        />
-      </div>
-
+      <HotspotCategorySelect category={category} setCategory={setCategory} />
+      <HotspotTextFields
+        locality={locality}
+        setLocality={setLocality}
+        description={description}
+        setDescription={setDescription}
+      />
       <button
         type="submit"
         className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-sm transition"

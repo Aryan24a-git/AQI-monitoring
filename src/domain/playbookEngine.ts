@@ -26,15 +26,66 @@ export interface PlaybookData {
   generatedAt?: string;
 }
 
+const VULN_LABELS: Record<string, string> = {
+  kids: 'Kids <12',
+  seniors: 'Seniors 60+',
+  asthma: 'Asthma/Resp.',
+  none: 'General',
+};
+
+/** Formats household vulnerability keys into human-readable labels. */
 export function formatVulnList(vulns: readonly string[]): string {
-  const map: Record<string, string> = {
-    kids: 'Kids <12',
-    seniors: 'Seniors 60+',
-    asthma: 'Asthma/Resp.',
-    none: 'General',
-  };
   if (!vulns || vulns.length === 0) return 'General';
-  return vulns.map((v) => map[v] || v).join(', ');
+  return vulns.map((v) => VULN_LABELS[v] || v).join(', ');
+}
+
+function buildDiyIaqHack(purifier: HouseholdProfile['purifier'], maxDrop: number): PlaybookItem {
+  const noPurifier = purifier === 'none';
+  return {
+    id: 'iaq-2',
+    title: noPurifier
+      ? 'DIY Box-Fan + MERV-13/HEPA Filter (~₹1,600)'
+      : 'Seal Bedroom Gaps with ₹250 EPDM Foam Tape',
+    detail: noPurifier
+      ? 'Tape a standard MERV-13 filter to the back of a table/exhaust fan to scrub bedroom PM2.5 affordably.'
+      : 'Keep your 1-room HEPA in the main sleeping room with doors sealed via self-adhesive EPDM foam tape.',
+    tag: 'DIY < ₹2,000',
+    exposurePct: Math.round(maxDrop * 0.4),
+    co2Kg: 0.1,
+  };
+}
+
+function buildBudgetIaqHack(
+  profile: HouseholdProfile,
+  ventPhrase: string,
+  sealPhrase: string,
+  maxDrop: number
+): PlaybookItem {
+  if (profile.budgetTier === 'zero_cost') {
+    return {
+      id: 'iaq-2',
+      title: 'Damp Rolled-Towel Door & Window Gap Sealing',
+      detail: `Keep windows shut outside ${ventPhrase}. Press damp rolled cotton towels along balcony/door gaps to trap infiltrating smog.`,
+      tag: '₹0 Zero-Cost',
+      exposurePct: Math.round(maxDrop * 0.38),
+      co2Kg: 0.1,
+    };
+  }
+  if (profile.budgetTier === 'diy_2000') return buildDiyIaqHack(profile.purifier, maxDrop);
+  return {
+    id: 'iaq-2',
+    title:
+      profile.purifier === 'whole_home'
+        ? 'Run Whole-Home HEPA on High After 5 PM Inversion'
+        : 'Create a Sealed HEPA Clean-Air Bedroom Sanctuary',
+    detail:
+      profile.purifier === 'none'
+        ? 'Prioritize a True HEPA H13 purifier (CADR ≥ 350 m³/h) for the main bedroom.'
+        : `Keep your HEPA unit running continuously, especially from ${sealPhrase} through 9:00 AM.`,
+    tag: 'HEPA Strategy',
+    exposurePct: Math.round(maxDrop * 0.42),
+    co2Kg: 0.1,
+  };
 }
 
 function buildIaqHacks(
@@ -45,62 +96,19 @@ function buildIaqHacks(
 ): PlaybookItem[] {
   const ventPhrase = vent ? vent.windowLabel : 'cleanest midday hours';
   const sealPhrase = vent ? vent.sealLabel : 'evening inversion';
-  const hacks: PlaybookItem[] = [
-    {
-      id: 'iaq-1',
-      title: 'Wet Mop Only — Skip Dry Broom Sweeping Today',
-      detail:
-        loc.pm10 != null
-          ? `At ${loc.pm10} µg/m³ PM10, dry jhadu kicks settled road dust right back into breathing height. Use a damp microfiber mop or wet cloth.`
-          : 'Dry jhadu kicks settled road dust right back into breathing height. Use a damp microfiber mop or wet cloth.',
-      tag: '₹0 Habit',
-      exposurePct: Math.round(impact.maxExposureDropPct * 0.3),
-      co2Kg: 0.05,
-    },
-  ];
-
-  if (profile.budgetTier === 'zero_cost') {
-    hacks.push({
-      id: 'iaq-2',
-      title: 'Damp Rolled-Towel Door & Window Gap Sealing',
-      detail: `Keep windows shut outside ${ventPhrase}. Press damp rolled cotton towels along balcony/door gaps to trap infiltrating smog.`,
-      tag: '₹0 Zero-Cost',
-      exposurePct: Math.round(impact.maxExposureDropPct * 0.38),
-      co2Kg: 0.1,
-    });
-  } else if (profile.budgetTier === 'diy_2000') {
-    hacks.push({
-      id: 'iaq-2',
-      title:
-        profile.purifier === 'none'
-          ? 'DIY Box-Fan + MERV-13/HEPA Filter (~₹1,600)'
-          : 'Seal Bedroom Gaps with ₹250 EPDM Foam Tape',
-      detail:
-        profile.purifier === 'none'
-          ? 'Tape a standard MERV-13 filter to the back of a table/exhaust fan to scrub bedroom PM2.5 affordably.'
-          : 'Keep your 1-room HEPA in the main sleeping room with doors sealed via self-adhesive EPDM foam tape.',
-      tag: 'DIY < ₹2,000',
-      exposurePct: Math.round(impact.maxExposureDropPct * 0.4),
-      co2Kg: 0.1,
-    });
-  } else {
-    hacks.push({
-      id: 'iaq-2',
-      title:
-        profile.purifier === 'whole_home'
-          ? 'Run Whole-Home HEPA on High After 5 PM Inversion'
-          : 'Create a Sealed HEPA Clean-Air Bedroom Sanctuary',
-      detail:
-        profile.purifier === 'none'
-          ? 'Prioritize a True HEPA H13 purifier (CADR ≥ 350 m³/h) for the main bedroom.'
-          : `Keep your HEPA unit running continuously, especially from ${sealPhrase} through 9:00 AM.`,
-      tag: 'HEPA Strategy',
-      exposurePct: Math.round(impact.maxExposureDropPct * 0.42),
-      co2Kg: 0.1,
-    });
-  }
-
-  hacks.push({
+  const mopHack: PlaybookItem = {
+    id: 'iaq-1',
+    title: 'Wet Mop Only — Skip Dry Broom Sweeping Today',
+    detail:
+      loc.pm10 != null
+        ? `At ${loc.pm10} µg/m³ PM10, dry jhadu kicks settled road dust right back into breathing height. Use a damp microfiber mop or wet cloth.`
+        : 'Dry jhadu kicks settled road dust right back into breathing height. Use a damp microfiber mop or wet cloth.',
+    tag: '₹0 Habit',
+    exposurePct: Math.round(impact.maxExposureDropPct * 0.3),
+    co2Kg: 0.05,
+  };
+  const budgetHack = buildBudgetIaqHack(profile, ventPhrase, sealPhrase, impact.maxExposureDropPct);
+  const kitchenHack: PlaybookItem = {
     id: 'iaq-3',
     title: profile.kitchenExhaust
       ? 'Run Kitchen Exhaust During Tadka & Skip Agarbatti'
@@ -109,84 +117,81 @@ function buildIaqHacks(
       ? `Switch on exhaust 2 mins before frying and leave it on 5 mins after. Avoid incense sticks and mosquito coils.`
       : `Without exhaust, frying can spike indoor PM2.5 above 400 µg/m³. Use lids and skip agarbatti today.`,
     tag: 'Indoor Source Cut',
-    exposurePct: impact.maxExposureDropPct - hacks[0].exposurePct - hacks[1].exposurePct,
+    exposurePct: impact.maxExposureDropPct - mopHack.exposurePct - budgetHack.exposurePct,
     co2Kg: 0.2,
-  });
-
-  return hacks;
+  };
+  return [mopHack, budgetHack, kitchenHack];
 }
 
-function buildEmissionSwaps(
-  loc: LocationScenario,
-  profile: HouseholdProfile,
-  vent: VentilationWindow | null,
-  impact: CalculatedImpact
-): PlaybookItem[] {
-  const ventPhrase = vent ? vent.windowLabel : 'midday afternoon';
-  const swaps: PlaybookItem[] = [];
-  if (profile.commuteMode === 'solo_car') {
-    swaps.push({
+function buildCommuteSwap(profile: HouseholdProfile, impact: CalculatedImpact): PlaybookItem {
+  const commuteMap: Record<HouseholdProfile['commuteMode'], () => PlaybookItem> = {
+    solo_car: () => ({
       id: 'swap-1',
       title: `Take Metro / Bus or Carpool for Your ${impact.km} km Commute`,
       detail: `Skipping a solo car cuts ${impact.commuteCo2Kg} kg CO₂ and keeps ~${Math.round(impact.km * NOX_PER_KM.value.solo_car)}g NOx out of smog. Wear an N95 for the last-mile walk.`,
       tag: `-${impact.commuteCo2Kg} kg CO₂`,
       exposurePct: 0,
       co2Kg: impact.commuteCo2Kg,
-    });
-  } else if (profile.commuteMode === 'two_wheeler') {
-    swaps.push({
+    }),
+    two_wheeler: () => ({
       id: 'swap-1',
       title: `Swap ${impact.km} km Two-Wheeler Ride to Metro / AC Bus`,
       detail: `Two-wheeler riders inhale 2–3× more roadside exhaust. Transit saves ${impact.commuteCo2Kg} kg CO₂ and shields lungs.`,
       tag: `-${impact.commuteCo2Kg} kg CO₂`,
       exposurePct: 0,
       co2Kg: impact.commuteCo2Kg,
-    });
-  } else if (profile.commuteMode === 'public_transit') {
-    const transitCo2 = COMMUTE_BASELINE_CO2_KG.value.public_transit;
-    swaps.push({
+    }),
+    public_transit: () => ({
       id: 'swap-1',
       title: 'Keep Metro/Bus Routine & Walk/E-Rickshaw Last Mile',
       detail:
         'Your transit choice avoids over 2 kg CO₂ vs driving. Choose an electric e-rickshaw over diesel autos.',
-      tag: `-${transitCo2} kg CO₂`,
+      tag: `-${COMMUTE_BASELINE_CO2_KG.value.public_transit} kg CO₂`,
       exposurePct: 0,
-      co2Kg: transitCo2,
-    });
-  } else {
-    const wfhCo2 = COMMUTE_BASELINE_CO2_KG.value.wfh;
-    swaps.push({
+      co2Kg: COMMUTE_BASELINE_CO2_KG.value.public_transit,
+    }),
+    wfh: () => ({
       id: 'swap-1',
       title: 'Zero-Idling WFH Day + Batched Grocery Orders',
       detail:
         'Avoid short cold-engine runs. Combine errands into one afternoon trip during solar dispersion.',
-      tag: `-${wfhCo2} kg CO₂`,
+      tag: `-${COMMUTE_BASELINE_CO2_KG.value.wfh} kg CO₂`,
       exposurePct: 0,
-      co2Kg: wfhCo2,
-    });
-  }
-
-  swaps.push({
-    id: 'swap-2',
-    title: `Shift Errands to ${ventPhrase} & Cut Engine Idling`,
-    detail: `Morning (6–9 AM) and evening (6–10 PM) have the worst inversion. Batch outdoor errands during the afternoon dip.`,
-    tag: 'Peak Smog Dodge',
-    exposurePct: 0,
-    co2Kg: 0.15,
-  });
-
-  swaps.push({
-    id: 'swap-3',
-    title: 'Use Electric Kettle / Induction & Say No to Open Bonfires',
-    detail: `Use an electric kettle or pressure cooker lid to cut indoor NO₂. Remind society watchmen not to burn dry leaves.`,
-    tag: 'Clean Energy Swap',
-    exposurePct: 0,
-    co2Kg: 0.2,
-  });
-
-  return swaps;
+      co2Kg: COMMUTE_BASELINE_CO2_KG.value.wfh,
+    }),
+  };
+  return commuteMap[profile.commuteMode]();
 }
 
+function buildEmissionSwaps(
+  _loc: LocationScenario,
+  profile: HouseholdProfile,
+  vent: VentilationWindow | null,
+  impact: CalculatedImpact
+): PlaybookItem[] {
+  const ventPhrase = vent ? vent.windowLabel : 'midday afternoon';
+  return [
+    buildCommuteSwap(profile, impact),
+    {
+      id: 'swap-2',
+      title: `Shift Errands to ${ventPhrase} & Cut Engine Idling`,
+      detail: `Morning (6–9 AM) and evening (6–10 PM) have the worst inversion. Batch outdoor errands during the afternoon dip.`,
+      tag: 'Peak Smog Dodge',
+      exposurePct: 0,
+      co2Kg: 0.15,
+    },
+    {
+      id: 'swap-3',
+      title: 'Use Electric Kettle / Induction & Say No to Open Bonfires',
+      detail: `Use an electric kettle or pressure cooker lid to cut indoor NO₂. Remind society watchmen not to burn dry leaves.`,
+      tag: 'Clean Energy Swap',
+      exposurePct: 0,
+      co2Kg: 0.2,
+    },
+  ];
+}
+
+/** Generates the deterministic indoor air quality and emission-reduction playbook. */
 export function buildDeterministicPlaybook(
   loc: LocationScenario,
   profile: HouseholdProfile,

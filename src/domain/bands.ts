@@ -15,6 +15,20 @@ export interface AqiBandDefinition {
   readonly pm25Max: number; // units: µg/m³
 }
 
+function cpcbLabel(index: number, fallback: string): string {
+  return CPCB_BANDS[index]?.label ?? fallback;
+}
+
+const FALLBACK_BAND: AqiBandDefinition = {
+  ordinal: 5,
+  key: 'hazardous',
+  label: cpcbLabel(5, 'Severe'),
+  aqiMin: 301,
+  aqiMax: 999,
+  pm25Min: 225.5,
+  pm25Max: 1000.0,
+};
+
 /**
  * Six standard AQI bands as immutable data (not scattered conditionals).
  * Citation: US EPA Air Quality Index Breakpoints for PM2.5 (40 CFR Part 58).
@@ -23,7 +37,7 @@ export const AQI_BANDS: readonly AqiBandDefinition[] = [
   {
     ordinal: 0,
     key: 'good',
-    label: CPCB_BANDS[0]!.label,
+    label: cpcbLabel(0, 'Good'),
     aqiMin: 0,
     aqiMax: 50,
     pm25Min: 0.0,
@@ -32,7 +46,7 @@ export const AQI_BANDS: readonly AqiBandDefinition[] = [
   {
     ordinal: 1,
     key: 'moderate',
-    label: CPCB_BANDS[1]!.label,
+    label: cpcbLabel(1, 'Satisfactory'),
     aqiMin: 51,
     aqiMax: 100,
     pm25Min: 9.1,
@@ -41,7 +55,7 @@ export const AQI_BANDS: readonly AqiBandDefinition[] = [
   {
     ordinal: 2,
     key: 'usg',
-    label: CPCB_BANDS[2]!.label,
+    label: cpcbLabel(2, 'Moderately Polluted'),
     aqiMin: 101,
     aqiMax: 150,
     pm25Min: 35.5,
@@ -50,7 +64,7 @@ export const AQI_BANDS: readonly AqiBandDefinition[] = [
   {
     ordinal: 3,
     key: 'unhealthy',
-    label: CPCB_BANDS[3]!.label,
+    label: cpcbLabel(3, 'Poor'),
     aqiMin: 151,
     aqiMax: 200,
     pm25Min: 55.5,
@@ -59,40 +73,30 @@ export const AQI_BANDS: readonly AqiBandDefinition[] = [
   {
     ordinal: 4,
     key: 'very_unhealthy',
-    label: CPCB_BANDS[4]!.label,
+    label: cpcbLabel(4, 'Very Poor'),
     aqiMin: 201,
     aqiMax: 300,
     pm25Min: 125.5,
     pm25Max: 225.4,
   },
-  {
-    ordinal: 5,
-    key: 'hazardous',
-    label: CPCB_BANDS[5]!.label,
-    aqiMin: 301,
-    aqiMax: 999,
-    pm25Min: 225.5,
-    pm25Max: 1000.0,
-  },
+  FALLBACK_BAND,
 ] as const;
 
 /** @testonly */
 export function findBandByAqi(aqi: number): AqiBandDefinition {
   const clamped = Math.max(0, aqi);
-  const found = AQI_BANDS.find((b) => clamped >= b.aqiMin && clamped <= b.aqiMax);
-  return found ?? AQI_BANDS[AQI_BANDS.length - 1]!;
+  return AQI_BANDS.find((b) => clamped >= b.aqiMin && clamped <= b.aqiMax) ?? FALLBACK_BAND;
 }
 
 export function findBandByPm25(pm25: number): AqiBandDefinition {
   const clamped = Math.max(0, pm25);
-  const found = AQI_BANDS.find((b) => clamped >= b.pm25Min && clamped <= b.pm25Max);
-  return found ?? AQI_BANDS[AQI_BANDS.length - 1]!;
+  return AQI_BANDS.find((b) => clamped >= b.pm25Min && clamped <= b.pm25Max) ?? FALLBACK_BAND;
 }
 
 /** @testonly */
 export function getBandByOrdinal(ordinal: number): AqiBandDefinition {
   const clamped = Math.min(Math.max(ordinal, 0), AQI_BANDS.length - 1);
-  return AQI_BANDS[clamped]!;
+  return AQI_BANDS[clamped] ?? FALLBACK_BAND;
 }
 
 /**
@@ -102,5 +106,5 @@ export function getBandByOrdinal(ordinal: number): AqiBandDefinition {
 /** @testonly */
 export function escalateBand(band: AqiBandDefinition, steps: number): AqiBandDefinition {
   const newOrdinal = Math.min(Math.max(band.ordinal + steps, 0), AQI_BANDS.length - 1);
-  return AQI_BANDS[newOrdinal]!;
+  return AQI_BANDS[newOrdinal] ?? FALLBACK_BAND;
 }

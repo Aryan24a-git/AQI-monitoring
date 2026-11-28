@@ -191,6 +191,27 @@ function calculateCommute(mode: CommuteMode, km: number) {
   };
 }
 
+function computeExposureDropPct(profile: HouseholdProfile): number {
+  const exp = EXPOSURE_DROP_COMPONENTS.value;
+  const purifierBonus: Record<PurifierSetup, number> = {
+    none: 0,
+    one_room: exp.purifierOneRoom,
+    whole_home: exp.purifierWholeHome,
+  };
+  const noPurifierBonus: Record<BudgetTier, number> = {
+    zero_cost: 0,
+    diy_2000: exp.budgetDiyNoPurifier,
+    paid_upgrades: exp.budgetPaidNoPurifier,
+  };
+  const drop =
+    exp.base +
+    (profile.kitchenExhaust ? exp.kitchenExhaust : 0) +
+    purifierBonus[profile.purifier] +
+    (profile.purifier === 'none' ? noPurifierBonus[profile.budgetTier] : 0);
+  return Math.min(exp.maxCap, drop);
+}
+
+/** Computes deterministic daily CO2, NOx, exposure drop, and cigarette-equivalent impact. */
 export function computeDeterministicImpact(
   loc: LocationScenario,
   profile: HouseholdProfile
@@ -206,19 +227,9 @@ export function computeDeterministicImpact(
   const comm = calculateCommute(profile.commuteMode, km);
   const totalCo2Kg = Number((comm.co2 + HOUSEHOLD_BASELINE_CO2_KG.value).toFixed(2));
   const totalNoxG = Number((comm.nox + HOUSEHOLD_BASELINE_NOX_G.value).toFixed(1));
-
-  const exp = EXPOSURE_DROP_COMPONENTS.value;
-  let drop = exp.base;
-  if (profile.kitchenExhaust) drop += exp.kitchenExhaust;
-  if (profile.purifier === 'one_room') drop += exp.purifierOneRoom;
-  if (profile.purifier === 'whole_home') drop += exp.purifierWholeHome;
-  if (profile.budgetTier === 'diy_2000' && profile.purifier === 'none')
-    drop += exp.budgetDiyNoPurifier;
-  if (profile.budgetTier === 'paid_upgrades' && profile.purifier === 'none')
-    drop += exp.budgetPaidNoPurifier;
-  drop = Math.min(exp.maxCap, drop);
-
+  const drop = computeExposureDropPct(profile);
   const maxCigsAvoided = Number((aqi.cigsPerDay * (drop / 100)).toFixed(1));
+
   return {
     aqi,
     km,

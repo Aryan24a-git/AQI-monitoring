@@ -100,6 +100,80 @@ function GenerateAiButton({
   );
 }
 
+function MeterHeader({
+  playbookSource,
+  generatedAt,
+  doneCount,
+  totalCount,
+}: {
+  playbookSource: 'basic' | 'ai';
+  generatedAt?: string;
+  doneCount: number;
+  totalCount: number;
+}) {
+  return (
+    <div className="flex items-center justify-between flex-wrap gap-2">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-teal-100 text-teal-800">
+          <Activity className="w-4 h-4" />
+        </span>
+        <h3 className="font-bold text-base text-slate-900">Today’s Live Impact Meter</h3>
+        <SourceBadge playbookSource={playbookSource} generatedAt={generatedAt} />
+      </div>
+      <span className="text-xs font-bold text-teal-800">
+        {doneCount} / {totalCount} actions completed today
+      </span>
+    </div>
+  );
+}
+
+function MeterMetricsRow({
+  earnedExposure,
+  maxExposureDropPct,
+  earnedCigs,
+  earnedCo2,
+}: {
+  earnedExposure: number;
+  maxExposureDropPct: number;
+  earnedCigs: number;
+  earnedCo2: number;
+}) {
+  return (
+    <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-1">
+      <MetricTile
+        label="Exposure Cut (rough estimate)"
+        value={`${earnedExposure}%`}
+        suffix={` / ${maxExposureDropPct}%`}
+        colorClass="text-teal-800"
+      />
+      <MetricTile
+        label="Cigs Avoided (rough estimate)"
+        value={earnedCigs.toFixed(1)}
+        suffix=" today"
+        colorClass="text-emerald-800"
+      />
+      <MetricTile
+        label="CO₂ Saved (rough estimate)"
+        value={earnedCo2.toFixed(2)}
+        suffix=" kg"
+        colorClass="text-sky-800"
+      />
+    </div>
+  );
+}
+
+function MeterProgressBar({ pct }: { pct: number }) {
+  return (
+    <div className="w-full h-3 bg-stone-100 rounded-full overflow-hidden border border-stone-200/70">
+      <div
+        className="h-full bg-gradient-to-r from-teal-600 to-emerald-500 rounded-full transition-all duration-500"
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
+}
+
+/** Progress meter summarizing completed playbook actions and estimated exposure/CO2 savings. */
 export function ImpactMeter({
   playbook,
   impact,
@@ -117,44 +191,19 @@ export function ImpactMeter({
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div className="flex-1 space-y-2.5">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-teal-100 text-teal-800">
-                <Activity className="w-4 h-4" />
-              </span>
-              <h3 className="font-bold text-base text-slate-900">Today’s Live Impact Meter</h3>
-              <SourceBadge playbookSource={playbookSource} generatedAt={playbook.generatedAt} />
-            </div>
-            <span className="text-xs font-bold text-teal-800">
-              {doneCount} / {totalCount} actions completed today
-            </span>
-          </div>
-          <div className="w-full h-3 bg-stone-100 rounded-full overflow-hidden border border-stone-200/70">
-            <div
-              className="h-full bg-gradient-to-r from-teal-600 to-emerald-500 rounded-full transition-all duration-500"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-1">
-            <MetricTile
-              label="Exposure Cut (rough estimate)"
-              value={`${earnedExposure}%`}
-              suffix={` / ${impact.maxExposureDropPct}%`}
-              colorClass="text-teal-800"
-            />
-            <MetricTile
-              label="Cigs Avoided (rough estimate)"
-              value={earnedCigs.toFixed(1)}
-              suffix=" today"
-              colorClass="text-emerald-800"
-            />
-            <MetricTile
-              label="CO₂ Saved (rough estimate)"
-              value={earnedCo2.toFixed(2)}
-              suffix=" kg"
-              colorClass="text-sky-800"
-            />
-          </div>
+          <MeterHeader
+            playbookSource={playbookSource}
+            generatedAt={playbook.generatedAt}
+            doneCount={doneCount}
+            totalCount={totalCount}
+          />
+          <MeterProgressBar pct={pct} />
+          <MeterMetricsRow
+            earnedExposure={earnedExposure}
+            maxExposureDropPct={impact.maxExposureDropPct}
+            earnedCigs={earnedCigs}
+            earnedCo2={earnedCo2}
+          />
         </div>
         <GenerateAiButton isGeneratingAI={isGeneratingAI} onGenerateAI={onGenerateAI} />
       </div>

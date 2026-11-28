@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { findBandByPm25 } from '../../domain/bands';
+import { CACHE_TTL_MS } from '../../domain/constants';
 import type { AirQualitySnapshot } from '../../domain/types';
 import { logger } from '../logging/logger';
 import { LruCache, RequestCoalescer } from '../cache/lru';
@@ -23,7 +24,7 @@ const ResponseSchema = z.object({
 
 const AQI_CACHE = new LruCache<string, AirQualitySnapshot>({
   maxEntries: 500,
-  ttlMs: 15 * 60 * 1000,
+  ttlMs: CACHE_TTL_MS,
 });
 const AQI_CALLS = new RequestCoalescer<string, AirQualitySnapshot>();
 const BREAKER = new CircuitBreaker({ failureThreshold: 5, openMs: 30_000 });
@@ -61,23 +62,28 @@ function buildSnapshotUrl(lat: number, lon: number): URL {
   return url;
 }
 
+function firstValidValue(
+  currentVal: number | null | undefined,
+  hourly: readonly (number | null)[]
+): number | null {
+  return currentVal ?? hourly.find((value) => value !== null) ?? null;
+}
+
 function parseSnapshot(raw: unknown): AirQualitySnapshot {
-  let parsed: z.infer<typeof ResponseSchema>;
-  try {
-    parsed = ResponseSchema.parse(raw);
-  } catch (error) {
-    throw new ProviderError('SCHEMA_ERROR', 'Upstream response did not match schema', error);
+  const parsed = ResponseSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new ProviderError('SCHEMA_ERROR', 'Upstream response did not match schema', parsed.error);
   }
-  const current = parsed.current;
-  const pm25 = current?.pm2_5 ?? parsed.hourly.pm2_5.find((value) => value !== null);
-  const aqi = current?.us_aqi ?? parsed.hourly.us_aqi.find((value) => value !== null);
+  const { current, hourly } = parsed.data;
+  const pm25 = firstValidValue(current?.pm2_5, hourly.pm2_5);
+  const aqi = firstValidValue(current?.us_aqi, hourly.us_aqi);
   if (pm25 == null || aqi == null) {
     throw new ProviderError('SCHEMA_ERROR', 'Upstream response contained no current values');
   }
   return {
     aqi,
     pm25,
-    timestamp: timestampFrom(current?.time ?? parsed.hourly.time[0] ?? new Date().toISOString()),
+    timestamp: timestampFrom(current?.time ?? hourly.time[0] ?? new Date().toISOString()),
     provider: 'Open-Meteo Air Quality',
     band: findBandByPm25(pm25).key,
     isStale: false,
@@ -121,6 +127,19 @@ export async function fetchOpenMeteoSnapshot(
   );
 }
 
+function parseForecastReadings(raw: unknown, hours: number): readonly ForecastReading[] {
+  const parsed = ResponseSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new ProviderError('SCHEMA_ERROR', 'Upstream response did not match schema');
+  }
+  return parsed.data.hourly.time.slice(0, hours).map((time, index) => ({
+    time,
+    pm25: parsed.data.hourly.pm2_5[index] ?? 0,
+    aqi: parsed.data.hourly.us_aqi[index] ?? 0,
+  }));
+}
+
+/** Fetches hourly PM2.5 and US AQI forecast readings from Open-Meteo. */
 export async function fetchOpenMeteoForecast(
   lat: number,
   lon: number,
@@ -135,27 +154,13 @@ export async function fetchOpenMeteoForecast(
   url.searchParams.set('hourly', 'pm2_5,us_aqi');
   url.searchParams.set('forecast_days', '7');
   try {
-    return await fetchValidatedJson(
-      url,
-      (raw) => {
-        const parsed = ResponseSchema.safeParse(raw);
-        if (!parsed.success) {
-          throw new ProviderError('SCHEMA_ERROR', 'Upstream response did not match schema');
-        }
-        return parsed.data.hourly.time.slice(0, hours).map((time, index) => ({
-          time,
-          pm25: parsed.data.hourly.pm2_5[index] ?? 0,
-          aqi: parsed.data.hourly.us_aqi[index] ?? 0,
-        }));
-      },
-      { timeoutMs: 4_000, fetchImpl }
-    );
+    return await fetchValidatedJson(url, (raw) => parseForecastReadings(raw, hours), {
+      timeoutMs: 4_000,
+      fetchImpl,
+    });
   } catch (error) {
     logger.warn(
-      {
-        counter: 'providerFailure',
-        provider: 'air-quality-forecast',
-      },
+      { counter: 'providerFailure', provider: 'air-quality-forecast' },
       'providerFailure'
     );
     throw error instanceof ProviderError

@@ -57,6 +57,28 @@ function BulletinHeader({
   );
 }
 
+function buildBulletinRequestBody(
+  props: WhatsAppGeneratorProps,
+  lang: 'en' | 'hi',
+  rwaName: string,
+  consentGranted: boolean
+) {
+  return JSON.stringify({
+    lang,
+    rwaName,
+    city: props.location.city,
+    shortCity: props.location.shortCity,
+    wind: props.location.wind,
+    pm25: props.location.pm25,
+    naqi: props.impact.aqi.naqi,
+    bandLabel: props.impact.aqi.band.label,
+    cigsPerDay: props.impact.aqi.cigsPerDay,
+    windowLabel: props.vent?.windowLabel ?? 'Midday window (hourly unavailable)',
+    sealLabel: props.vent?.sealLabel ?? 'Evening inversion',
+    aiConsent: consentGranted,
+  });
+}
+
 function useBulletinDraft(props: WhatsAppGeneratorProps, lang: 'en' | 'hi', rwaName: string) {
   const { showToast } = useToast();
   const [customBulletin, setCustomBulletin] = useState<string | null>(null);
@@ -68,29 +90,15 @@ function useBulletinDraft(props: WhatsAppGeneratorProps, lang: 'en' | 'hi', rwaN
       const res = await fetch('/api/bulletin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          lang,
-          rwaName,
-          city: props.location.city,
-          shortCity: props.location.shortCity,
-          wind: props.location.wind,
-          pm25: props.location.pm25,
-          naqi: props.impact.aqi.naqi,
-          bandLabel: props.impact.aqi.band.label,
-          cigsPerDay: props.impact.aqi.cigsPerDay,
-          windowLabel: props.vent?.windowLabel ?? 'Midday window (hourly unavailable)',
-          sealLabel: props.vent?.sealLabel ?? 'Evening inversion',
-          aiConsent: consentGranted,
-        }),
+        body: buildBulletinRequestBody(props, lang, rwaName, consentGranted),
       });
       if (res.ok) {
         const data = await res.json();
         setCustomBulletin(data.bulletinText);
-        showToast('Generated fresh RWA advisory!', 'success');
-      } else {
-        setCustomBulletin(null);
-        showToast('Generated advisory from local engine.', 'success');
+        return showToast('Generated fresh RWA advisory!', 'success');
       }
+      setCustomBulletin(null);
+      showToast('Generated advisory from local engine.', 'success');
     } catch {
       setCustomBulletin(null);
       showToast('Generated advisory from local engine.', 'success');
@@ -102,20 +110,54 @@ function useBulletinDraft(props: WhatsAppGeneratorProps, lang: 'en' | 'hi', rwaN
   return { customBulletin, setCustomBulletin, isDrafting, runDraftBulletin };
 }
 
-export function WhatsAppGenerator({ location, vent, impact }: WhatsAppGeneratorProps) {
-  const { showToast } = useToast();
-  const [lang, setLang] = useState<'en' | 'hi'>('en');
-  const [rwaName, setRwaName] = useState('Green Park / Residents Welfare Group');
-  const [showConsent, setShowConsent] = useState(false);
-  const { aiConsent, saveConsent } = useAiConsent();
-  const { customBulletin, setCustomBulletin, isDrafting, runDraftBulletin } = useBulletinDraft(
-    { location, vent, impact },
-    lang,
-    rwaName
+function BulletinInputRow({
+  rwaName,
+  onRwaChange,
+  isDrafting,
+  onDraftAi,
+}: {
+  rwaName: string;
+  onRwaChange: (v: string) => void;
+  isDrafting: boolean;
+  onDraftAi: () => void;
+}) {
+  return (
+    <div className="flex flex-col sm:flex-row gap-2">
+      <input
+        type="text"
+        aria-label="Society or RWA name"
+        value={rwaName}
+        onChange={(e) => onRwaChange(e.target.value)}
+        placeholder="Enter your Society / RWA name..."
+        className="flex-1 px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-600 focus:bg-white transition"
+      />
+      <button
+        type="button"
+        disabled={isDrafting}
+        onClick={onDraftAi}
+        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold shadow-sm transition shrink-0 disabled:opacity-50"
+      >
+        {isDrafting ? (
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        ) : (
+          <Sparkles className="w-3.5 h-3.5" />
+        )}
+        <span>Generate with AI</span>
+      </button>
+    </div>
   );
+}
 
-  const defaultBulletin = useMemo(
+function useBulletinText(
+  props: WhatsAppGeneratorProps,
+  lang: 'en' | 'hi',
+  rwaName: string,
+  customBulletin: string | null
+): string {
+  const { location, vent, impact } = props;
+  return useMemo(
     () =>
+      customBulletin ??
       formatWhatsAppBulletin({
         lang,
         rwaName,
@@ -129,72 +171,85 @@ export function WhatsAppGenerator({ location, vent, impact }: WhatsAppGeneratorP
         windowLabel: vent?.windowLabel ?? null,
         sealLabel: vent?.sealLabel ?? null,
       }),
-    [lang, rwaName, location, vent, impact]
+    [customBulletin, lang, rwaName, location, vent, impact]
   );
-  const bulletinText = customBulletin ?? defaultBulletin;
+}
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(bulletinText);
-      showToast('WhatsApp bulletin copied to clipboard!', 'success');
-    } catch {
-      showToast('Could not copy automatically — please select and copy.', 'error');
-    }
-  };
+async function copyBulletinText(
+  text: string,
+  showToast: ReturnType<typeof useToast>['showToast']
+): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast('WhatsApp bulletin copied to clipboard!', 'success');
+  } catch {
+    showToast('Could not copy automatically — please select and copy.', 'error');
+  }
+}
 
-  const handleDraftWithAI = async () => {
+function useBulletinActions(
+  draft: ReturnType<typeof useBulletinDraft>,
+  showToast: (msg: string, type: 'success' | 'info' | 'warning' | 'error') => void
+) {
+  const [showConsent, setShowConsent] = useState(false);
+  const { aiConsent, saveConsent } = useAiConsent();
+
+  const handleDraftWithAI = () => {
     if (aiConsent === null) return setShowConsent(true);
     if (aiConsent === 'basic') {
-      setCustomBulletin(null);
+      draft.setCustomBulletin(null);
       return showToast('Generated advisory from local engine (Basic mode).', 'info');
     }
-    await runDraftBulletin(true);
+    void draft.runDraftBulletin(true);
   };
+  const onAllow = () => {
+    saveConsent('allow');
+    setShowConsent(false);
+    void draft.runDraftBulletin(true);
+  };
+  const onDecline = () => {
+    saveConsent('basic');
+    setShowConsent(false);
+    draft.setCustomBulletin(null);
+    showToast('Using Basic mode (local engine).', 'info');
+  };
+  return { showConsent, handleDraftWithAI, onAllow, onDecline };
+}
+
+/** Bilingual WhatsApp RWA bulletin generator with local fallback and optional AI rewrite. */
+export function WhatsAppGenerator({ location, vent, impact }: WhatsAppGeneratorProps) {
+  const { showToast } = useToast();
+  const [lang, setLang] = useState<'en' | 'hi'>('en');
+  const [rwaName, setRwaName] = useState('Green Park / Residents Welfare Group');
+  const draft = useBulletinDraft({ location, vent, impact }, lang, rwaName);
+  const bulletinText = useBulletinText(
+    { location, vent, impact },
+    lang,
+    rwaName,
+    draft.customBulletin
+  );
+  const { showConsent, handleDraftWithAI, onAllow, onDecline } = useBulletinActions(
+    draft,
+    showToast
+  );
 
   return (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm p-5 flex flex-col justify-between space-y-4">
       <div className="space-y-3.5">
         <BulletinHeader lang={lang} onLangChange={setLang} />
-        <div className="flex flex-col sm:flex-row gap-2">
-          <input
-            type="text"
-            aria-label="Society or RWA name"
-            value={rwaName}
-            onChange={(e) => setRwaName(e.target.value)}
-            placeholder="Enter your Society / RWA name..."
-            className="flex-1 px-3 py-2 text-xs bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-600 focus:bg-white transition"
-          />
-          <button
-            type="button"
-            disabled={isDrafting}
-            onClick={handleDraftWithAI}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold shadow-sm transition shrink-0 disabled:opacity-50"
-          >
-            {isDrafting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="w-3.5 h-3.5" />
-            )}
-            <span>Generate with AI</span>
-          </button>
-        </div>
-        <WhatsAppPreview bulletinText={bulletinText} lang={lang} onCopy={handleCopy} />
-      </div>
-      {showConsent && (
-        <AiConsentModal
-          onAllow={() => {
-            saveConsent('allow');
-            setShowConsent(false);
-            void runDraftBulletin(true);
-          }}
-          onDecline={() => {
-            saveConsent('basic');
-            setShowConsent(false);
-            setCustomBulletin(null);
-            showToast('Using Basic mode (local engine).', 'info');
-          }}
+        <BulletinInputRow
+          rwaName={rwaName}
+          onRwaChange={setRwaName}
+          isDrafting={draft.isDrafting}
+          onDraftAi={handleDraftWithAI}
         />
-      )}
+        <WhatsAppPreview
+          bulletinText={bulletinText}
+          lang={lang}
+          onCopy={() => void copyBulletinText(bulletinText, showToast)}
+        />
+      </div>
+      {showConsent && <AiConsentModal onAllow={onAllow} onDecline={onDecline} />}
     </div>
   );
 }

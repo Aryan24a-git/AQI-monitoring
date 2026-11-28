@@ -1,6 +1,25 @@
 import type { LocationScenario, CalculatedImpact } from '@/domain/scenarios';
 import type { VentilationWindow } from '@/domain/naqi';
 
+function hasAnyKeyword(text: string, keywords: readonly string[]): boolean {
+  return keywords.some((kw) => text.includes(kw));
+}
+
+function buildHindiReply(
+  location: LocationScenario,
+  impact: CalculatedImpact,
+  ventLabel: string,
+  sealLabel: string
+): string {
+  return (
+    `**आज ${location.shortCity} की हवा (CPCB NAQI ${impact.aqi.naqi} — ${impact.aqi.band.label}):**\n\n` +
+    `• अभी PM2.5 स्तर **${location.pm25} µg/m³** है, जो बिना बचाव के लगभग **${impact.aqi.cigsPerDay} सिगरेट/दिन** के बराबर है।\n` +
+    `• **खिड़कियाँ कब खोलें:** केवल दोपहर **${ventLabel}** के बीच। शाम ${sealLabel} तक बंद कर लें।\n` +
+    `• **घर के उपाय:** सूखे झाड़ू की जगह गीला पोछा लगाएँ और तड़का लगाते समय एग्जॉस्ट चलाएँ।`
+  );
+}
+
+/** Deterministic local fallback reply when AI chat is unavailable or consent is declined. */
 export function getChatFallbackReply(
   text: string,
   location: LocationScenario,
@@ -10,20 +29,15 @@ export function getChatFallbackReply(
   const ventLabel = vent ? vent.windowLabel : 'cleanest midday hours';
   const sealLabel = vent ? vent.sealLabel : 'evening inversion';
   const q = text.toLowerCase();
-  if (q.includes('hindi') || q.includes('हिन्दी') || q.includes('samjha')) {
-    return (
-      `**आज ${location.shortCity} की हवा (CPCB NAQI ${impact.aqi.naqi} — ${impact.aqi.band.label}):**\n\n` +
-      `• अभी PM2.5 स्तर **${location.pm25} µg/m³** है, जो बिना बचाव के लगभग **${impact.aqi.cigsPerDay} सिगरेट/दिन** के बराबर है।\n` +
-      `• **खिड़कियाँ कब खोलें:** केवल दोपहर **${ventLabel}** के बीच। शाम ${sealLabel} तक बंद कर लें।\n` +
-      `• **घर के उपाय:** सूखे झाड़ू की जगह गीला पोछा लगाएँ और तड़का लगाते समय एग्जॉस्ट चलाएँ।`
-    );
+  if (hasAnyKeyword(q, ['hindi', 'हिन्दी', 'samjha'])) {
+    return buildHindiReply(location, impact, ventLabel, sealLabel);
   }
-  if (q.includes('walk') || q.includes('7 am') || q.includes('morning')) {
+  if (hasAnyKeyword(q, ['walk', '7 am', 'morning'])) {
     return impact.aqi.naqi > 200
       ? `**No — skip the 7:00 AM outdoor walk today.** In ${location.shortCity}, morning inversion traps PM2.5 near ground height.\n\n**Safer swap:** Exercise indoors, or shift walking to **${ventLabel}** with a snug N95 mask.`
       : `At NAQI **${impact.aqi.naqi}**, a light walk is acceptable, though moving it to **${ventLabel}** cuts exposure further.`;
   }
-  if (q.includes('seal') || q.includes('window') || q.includes('gap')) {
+  if (hasAnyKeyword(q, ['seal', 'window', 'gap'])) {
     return (
       `**Zero-Cost Ways to Seal Bedroom Window & Door Gaps:**\n` +
       `1. **Damp Rolled Cotton Towel:** Wedge a damp rolled towel under bedroom and balcony door gaps.\n` +

@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import type { LocationScenario } from '@/domain/scenarios';
+import { CACHE_TTL_MS } from '@/domain/constants';
 import { searchOpenMeteo } from '@/server/providers/geocoding';
 import { REQUEST_ID_HEADER } from '@/server/http/requestId';
 import { createRateLimiter, withRateLimit } from '@/server/http/withApiGuards';
@@ -14,9 +15,21 @@ import { buildCombinedScenario, buildWaqiScenario, type MeteoPayload } from './c
 const limiter = createRateLimiter(RATE_LIMITS.cityScenarioPerMinute);
 const scenarioCache = new LruCache<string, LocationScenario>({
   maxEntries: 100,
-  ttlMs: 15 * 60 * 1000,
+  ttlMs: CACHE_TTL_MS,
 });
 const QuerySchema = z.object({ q: z.string().trim().min(2).max(MAX_QUERY_LENGTH) });
+
+function isValidMeteoPayload(payload: { aq: unknown; wx: unknown }): payload is MeteoPayload {
+  const aqObj = payload.aq as { current?: { pm2_5?: unknown; pm10?: unknown } } | null;
+  const wxObj = payload.wx as { current?: { wind_speed_10m?: unknown } } | null;
+  return Boolean(
+    aqObj?.current &&
+    Number.isFinite(aqObj.current.pm2_5) &&
+    Number.isFinite(aqObj.current.pm10) &&
+    wxObj?.current &&
+    Number.isFinite(wxObj.current.wind_speed_10m)
+  );
+}
 
 async function fetchLiveMeteo(lat: number, lon: number): Promise<MeteoPayload | null> {
   try {
@@ -27,18 +40,9 @@ async function fetchLiveMeteo(lat: number, lon: number): Promise<MeteoPayload | 
       fetch(wxUrl, { signal: AbortSignal.timeout(3500) }),
     ]);
     if (!aqRes.ok || !wxRes.ok) return null;
-    const aq = await aqRes.json();
-    const wx = await wxRes.json();
-    if (
-      !aq?.current ||
-      !Number.isFinite(aq.current.pm2_5) ||
-      !Number.isFinite(aq.current.pm10) ||
-      !wx?.current ||
-      !Number.isFinite(wx.current.wind_speed_10m)
-    ) {
-      return null;
-    }
-    return { aq, wx };
+    const [aq, wx] = await Promise.all([aqRes.json(), wxRes.json()]);
+    const payload = { aq, wx };
+    return isValidMeteoPayload(payload) ? payload : null;
   } catch {
     return null;
   }
@@ -59,13 +63,44 @@ async function resolveLiveScenario(
     fetchLiveMeteo(lat, lon),
   ]);
 
-  if (meteo) return buildCombinedScenario(name, admin1, meteo, waqi);
+  if (meteo) return buildCombinedScenario({ city: name, admin1 }, meteo, waqi);
   if (waqi && validateWaqiReading(waqi).valid) {
     return buildWaqiScenario(name, admin1, waqi, null);
   }
   return null;
 }
 
+async function lookupAndResolveScenario(q: string, rawQuery: string, requestId: string) {
+  const geoRes = await searchOpenMeteo(q).catch(() => []);
+  if (!geoRes || geoRes.length === 0) {
+    return apiErrorResponse(
+      {
+        code: 'NOT_FOUND',
+        message: `City "${rawQuery}" not found in geocoding database`,
+        requestId,
+        timestamp: new Date().toISOString(),
+      },
+      404
+    );
+  }
+  const top = geoRes[0];
+  const scenario = await resolveLiveScenario(top.name, top.admin1, top.latitude, top.longitude);
+  if (!scenario) {
+    return apiErrorResponse(
+      {
+        code: 'PROVIDER_UNAVAILABLE',
+        message:
+          'Live air quality provider temporarily unavailable. Please retry or enter AQI manually.',
+        requestId,
+        timestamp: new Date().toISOString(),
+      },
+      502
+    );
+  }
+  return scenario;
+}
+
+/** Handles GET /api/city-scenario by geocoding and combining Open-Meteo + WAQI data. */
 export async function handleCityScenario(req: NextRequest) {
   return withRateLimit(req, limiter, async ({ requestId }) => {
     const query = req.nextUrl.searchParams.get('q');
@@ -81,41 +116,14 @@ export async function handleCityScenario(req: NextRequest) {
         400
       );
     }
-
     const q = parsed.data.q.toLowerCase().trim();
     const cacheKey = `${getEnv().AQ_PROVIDER}:${q}`;
     const cached = scenarioCache.get(cacheKey);
     if (cached) return securityJson(cached, 200, { [REQUEST_ID_HEADER]: requestId });
 
-    const geoRes = await searchOpenMeteo(q).catch(() => []);
-    if (!geoRes || geoRes.length === 0) {
-      return apiErrorResponse(
-        {
-          code: 'NOT_FOUND',
-          message: `City "${parsed.data.q}" not found in geocoding database`,
-          requestId,
-          timestamp: new Date().toISOString(),
-        },
-        404
-      );
-    }
-
-    const top = geoRes[0];
-    const scenario = await resolveLiveScenario(top.name, top.admin1, top.latitude, top.longitude);
-    if (!scenario) {
-      return apiErrorResponse(
-        {
-          code: 'PROVIDER_UNAVAILABLE',
-          message:
-            'Live air quality provider temporarily unavailable. Please retry or enter AQI manually.',
-          requestId,
-          timestamp: new Date().toISOString(),
-        },
-        502
-      );
-    }
-
-    scenarioCache.set(cacheKey, scenario);
-    return securityJson(scenario, 200, { [REQUEST_ID_HEADER]: requestId });
+    const result = await lookupAndResolveScenario(q, parsed.data.q, requestId);
+    if (result instanceof Response) return result;
+    scenarioCache.set(cacheKey, result);
+    return securityJson(result, 200, { [REQUEST_ID_HEADER]: requestId });
   });
 }

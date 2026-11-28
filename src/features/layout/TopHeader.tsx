@@ -69,6 +69,18 @@ function BrandRow({ llmOn, onOpenProfile }: { llmOn: boolean | null; onOpenProfi
   );
 }
 
+const PURIFIER_LABELS: Record<HouseholdProfile['purifier'], string> = {
+  none: 'No Purifier',
+  one_room: '1 Room HEPA',
+  whole_home: 'Whole Home HEPA',
+};
+
+const BUDGET_LABELS: Record<HouseholdProfile['budgetTier'], string> = {
+  zero_cost: '₹0 Hacks',
+  diy_2000: 'DIY <₹2k',
+  paid_upgrades: 'Upgrades',
+};
+
 function ProfilePills({
   profile,
   onOpenProfile,
@@ -76,20 +88,14 @@ function ProfilePills({
   profile: HouseholdProfile;
   onOpenProfile: () => void;
 }) {
-  const purifierLabel =
-    profile.purifier === 'none'
-      ? 'No Purifier'
-      : profile.purifier === 'one_room'
-        ? '1 Room HEPA'
-        : 'Whole Home HEPA';
-  const budgetLabel =
-    profile.budgetTier === 'zero_cost'
-      ? '₹0 Hacks'
-      : profile.budgetTier === 'diy_2000'
-        ? 'DIY <₹2k'
-        : 'Upgrades';
   const pill =
     'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium bg-stone-100 group-hover:bg-teal-50 text-slate-700 group-hover:text-teal-900 border border-stone-200 group-hover:border-teal-200 whitespace-nowrap transition';
+  const items = [
+    { Icon: HeartPulse, text: formatVulnList(profile.vulnerabilities) },
+    { Icon: Wind, text: PURIFIER_LABELS[profile.purifier] },
+    { Icon: Navigation, text: profile.commuteMode === 'wfh' ? 'WFH' : `${profile.commuteKm} km` },
+    { Icon: IndianRupee, text: BUDGET_LABELS[profile.budgetTier] },
+  ];
   return (
     <button
       onClick={onOpenProfile}
@@ -97,22 +103,12 @@ function ProfilePills({
       title="Click to customize household profile"
       className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-left py-0.5 group"
     >
-      <span className={pill}>
-        <HeartPulse className="w-3 h-3 text-teal-700" />
-        {formatVulnList(profile.vulnerabilities)}
-      </span>
-      <span className={pill}>
-        <Wind className="w-3 h-3 text-teal-700" />
-        {purifierLabel}
-      </span>
-      <span className={pill}>
-        <Navigation className="w-3 h-3 text-teal-700" />
-        {profile.commuteMode === 'wfh' ? 'WFH' : `${profile.commuteKm} km`}
-      </span>
-      <span className={pill}>
-        <IndianRupee className="w-3 h-3 text-teal-700" />
-        {budgetLabel}
-      </span>
+      {items.map(({ Icon, text }) => (
+        <span key={text} className={pill}>
+          <Icon className="w-3 h-3 text-teal-700" />
+          {text}
+        </span>
+      ))}
       <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-teal-700 ml-1 whitespace-nowrap">
         Edit <ChevronRight className="w-3 h-3" />
       </span>
@@ -158,6 +154,23 @@ function DesktopTabs({
   );
 }
 
+function FetchLiveButton({ fetching }: { fetching: boolean }) {
+  return (
+    <button
+      type="submit"
+      disabled={fetching}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-semibold transition shrink-0 disabled:opacity-50"
+    >
+      {fetching ? (
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      ) : (
+        <Radio className="w-3.5 h-3.5" />
+      )}
+      <span>Fetch Live</span>
+    </button>
+  );
+}
+
 function CitySearchForm({ onFetchLiveCity }: { onFetchLiveCity: (city: string) => Promise<void> }) {
   const [cityInput, setCityInput] = useState('');
   const [fetching, setFetching] = useState(false);
@@ -186,18 +199,7 @@ function CitySearchForm({ onFetchLiveCity }: { onFetchLiveCity: (city: string) =
           className="w-full pl-8 pr-3 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-600 focus:bg-white transition"
         />
       </div>
-      <button
-        type="submit"
-        disabled={fetching}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-semibold transition shrink-0 disabled:opacity-50"
-      >
-        {fetching ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-        ) : (
-          <Radio className="w-3.5 h-3.5" />
-        )}
-        <span>Fetch Live</span>
-      </button>
+      <FetchLiveButton fetching={fetching} />
     </form>
   );
 }

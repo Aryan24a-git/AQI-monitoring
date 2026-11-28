@@ -67,15 +67,64 @@ export class NullClient implements LlmClient {
 
 const GROQ_CHAT_COMPLETIONS_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
+async function handleGroqFailure(
+  res: Response,
+  model: string
+): Promise<{ text: null; retry: boolean }> {
+  const errText = await res.text().catch(() => '');
+  if (handleGroqModelError(res.status, model, errText)) return { text: null, retry: false };
+  if (res.status === 429) cachedReadyProbe = { ok: false, checkedAt: Date.now() };
+  const retry = res.status === 429 || res.status >= 500;
+  if (!retry) logger.warn({ fallbackReason: `HTTP_${res.status}` }, 'llmRequestFailed');
+  return { text: null, retry };
+}
+
+async function readGroqReply(
+  res: Response,
+  model: string
+): Promise<{ text: string | null; retry: boolean }> {
+  if (!res.ok) return handleGroqFailure(res, model);
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string | null } }>;
+  };
+  const text = data.choices?.[0]?.message?.content ?? null;
+  if (text) recordLlmSuccess();
+  return { text, retry: false };
+}
+
 export class GroqClient implements LlmClient {
   constructor(
     private readonly apiKey: string,
     private readonly model: string = DEFAULT_GROQ_MODEL
   ) {}
 
+  private async attemptComplete(
+    body: string,
+    timeoutMs: number
+  ): Promise<{ text: string | null; retry: boolean }> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const res = await fetch(GROQ_CHAT_COMPLETIONS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${this.apiKey}` },
+        body,
+        signal: controller.signal,
+      });
+      return await readGroqReply(res, this.model);
+    } catch (error) {
+      logger.warn(
+        { fallbackReason: error instanceof Error ? error.name : 'unknown' },
+        'llmRequestFailed'
+      );
+      return { text: null, retry: true };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   async complete(request: LlmRequest): Promise<string | null> {
     if (modelUnavailable) return null;
-
     const body = JSON.stringify({
       model: this.model,
       messages: [
@@ -88,55 +137,9 @@ export class GroqClient implements LlmClient {
     });
 
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), request.timeoutMs);
-      try {
-        const res = await fetch(GROQ_CHAT_COMPLETIONS_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.apiKey}`,
-          },
-          body,
-          signal: controller.signal,
-        });
-
-        if (res.ok) {
-          const data = (await res.json()) as {
-            choices?: Array<{ message?: { content?: string | null } }>;
-          };
-          const text = data.choices?.[0]?.message?.content ?? null;
-          if (text) recordLlmSuccess();
-          return text;
-        }
-
-        const errText = await res.text().catch(() => '');
-        if (handleGroqModelError(res.status, this.model, errText)) {
-          return null;
-        }
-
-        const retryable = res.status === 429 || res.status >= 500;
-        if (res.status === 429) {
-          cachedReadyProbe = { ok: false, checkedAt: Date.now() };
-        }
-        if (!retryable || attempt === 1) {
-          logger.warn({ fallbackReason: `HTTP_${res.status}` }, 'llmRequestFailed');
-          return null;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 150 + Math.random() * 100));
-      } catch (error) {
-        if (attempt === 1) {
-          logger.warn(
-            {
-              fallbackReason: error instanceof Error ? error.name : 'unknown',
-            },
-            'llmRequestFailed'
-          );
-          return null;
-        }
-      } finally {
-        clearTimeout(timer);
-      }
+      const outcome = await this.attemptComplete(body, request.timeoutMs);
+      if (outcome.text !== null || !outcome.retry || attempt === 1) return outcome.text;
+      await new Promise((resolve) => setTimeout(resolve, 150 + Math.random() * 100));
     }
     return null;
   }

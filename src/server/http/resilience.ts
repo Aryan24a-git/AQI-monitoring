@@ -54,26 +54,33 @@ export async function fetchWithTimeout(
   }
 }
 
+async function tryOnce(
+  operation: () => Promise<Response>,
+  isLast: boolean
+): Promise<Response | null> {
+  try {
+    const response = await operation();
+    if (response.ok || (response.status < 500 && response.status !== 429)) return response;
+    if (isLast) throw new ProviderError('HTTP_ERROR', `Upstream returned ${response.status}`);
+    return null;
+  } catch (error) {
+    if (!isLast) return null;
+    throw error instanceof ProviderError
+      ? error
+      : new ProviderError('NETWORK_ERROR', 'Upstream request failed', error);
+  }
+}
+
+/** Retries transient 429/5xx/network upstream failures with exponential backoff. */
 export async function retryWithBackoff(
   operation: () => Promise<Response>,
   options: ResilienceOptions
 ): Promise<Response> {
   const retries = options.maxRetries ?? 2;
-  let attempt = 0;
-  while (true) {
-    try {
-      const response = await operation();
-      if (response.ok || (response.status < 500 && response.status !== 429)) return response;
-      if (attempt >= retries)
-        throw new ProviderError('HTTP_ERROR', `Upstream returned ${response.status}`);
-    } catch (error) {
-      if (attempt >= retries)
-        throw error instanceof ProviderError
-          ? error
-          : new ProviderError('NETWORK_ERROR', 'Upstream request failed', error);
-    }
+  for (let attempt = 0; ; attempt += 1) {
+    const res = await tryOnce(operation, attempt >= retries);
+    if (res) return res;
     await sleep((options.baseDelayMs ?? 200) * 2 ** attempt + Math.random() * 100);
-    attempt += 1;
   }
 }
 

@@ -42,6 +42,15 @@ export function clearGeocodingCache(): void {
   BREAKER.reset();
 }
 
+function parseGeocodeResponse(raw: unknown): readonly GeocodingResult[] {
+  const parsed = ResponseSchema.safeParse(raw);
+  if (!parsed.success) {
+    throw new ProviderError('SCHEMA_ERROR', 'Upstream response did not match schema');
+  }
+  return parsed.data.results ?? [];
+}
+
+/** Searches Open-Meteo geocoding API with LRU caching, coalescing, and circuit breaker. */
 export async function searchOpenMeteo(
   query: string,
   fetchImpl: typeof fetch = fetch
@@ -62,17 +71,10 @@ export async function searchOpenMeteo(
         url.searchParams.set('count', '5');
         url.searchParams.set('language', 'en');
         url.searchParams.set('format', 'json');
-        const results = await fetchValidatedJson(
-          url,
-          (raw) => {
-            const parsed = ResponseSchema.safeParse(raw);
-            if (!parsed.success) {
-              throw new ProviderError('SCHEMA_ERROR', 'Upstream response did not match schema');
-            }
-            return parsed.data.results ?? [];
-          },
-          { timeoutMs: 3_000, fetchImpl }
-        );
+        const results = await fetchValidatedJson(url, parseGeocodeResponse, {
+          timeoutMs: 3_000,
+          fetchImpl,
+        });
         CACHE.set(key, results);
         return results;
       } catch (error) {

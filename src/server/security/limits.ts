@@ -31,12 +31,11 @@ export interface BoundaryFailure {
   status: number;
 }
 
-export async function readJsonBoundary<T>(
+async function readRequestText(
   req: Request,
-  schema: z.ZodType<T>,
   requestId: string,
-  maxBytes: number = MAX_BODY_BYTES
-): Promise<BoundaryResult<T>> {
+  maxBytes: number
+): Promise<{ ok: true; text: string } | BoundaryFailure> {
   const contentType = req.headers.get('content-type')?.toLowerCase() ?? '';
   if (!contentType.startsWith('application/json')) {
     return boundaryError(
@@ -50,44 +49,58 @@ export async function readJsonBoundary<T>(
   if (declared > maxBytes) {
     return boundaryError(ErrorCode.BAD_REQUEST, 'Request body too large', requestId, 413);
   }
-  let text: string;
   try {
-    text = await req.text();
+    const text = await req.text();
+    if (new TextEncoder().encode(text).length > maxBytes) {
+      return boundaryError(ErrorCode.BAD_REQUEST, 'Request body too large', requestId, 413);
+    }
+    return { ok: true, text };
   } catch {
     return boundaryError(ErrorCode.BAD_REQUEST, 'Malformed JSON body', requestId, 400);
   }
-  if (new TextEncoder().encode(text).length > maxBytes) {
-    return boundaryError(ErrorCode.BAD_REQUEST, 'Request body too large', requestId, 413);
-  }
+}
+
+/** Validates Content-Type, byte size cap, JSON syntax, and Zod schema for incoming requests. */
+export async function readJsonBoundary<T>(
+  req: Request,
+  schema: z.ZodType<T>,
+  requestId: string,
+  maxBytes: number = MAX_BODY_BYTES
+): Promise<BoundaryResult<T>> {
+  const rawBody = await readRequestText(req, requestId, maxBytes);
+  if (!rawBody.ok) return rawBody;
   let raw: unknown;
   try {
-    raw = JSON.parse(text);
+    raw = JSON.parse(rawBody.text);
   } catch {
     return boundaryError(ErrorCode.BAD_REQUEST, 'Malformed JSON body', requestId, 400);
   }
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {
-    return boundaryError(
-      ErrorCode.VALIDATION_ERROR,
-      'Request validation failed',
-      requestId,
-      400,
-      parsed.error.issues
-    );
+    return {
+      ok: false,
+      status: 400,
+      error: createApiError(
+        ErrorCode.VALIDATION_ERROR,
+        'Request validation failed',
+        requestId,
+        parsed.error.issues
+      ),
+    };
   }
   return { ok: true, value: parsed.data };
 }
 
+/** Builds a standardized BoundaryFailure response object. */
 export function boundaryError(
   code: Parameters<typeof createApiError>[0],
   message: string,
   requestId: string,
-  status: number,
-  details?: unknown
+  status: number
 ): BoundaryFailure {
   return {
     ok: false,
     status,
-    error: createApiError(code, message, requestId, details),
+    error: createApiError(code, message, requestId),
   };
 }

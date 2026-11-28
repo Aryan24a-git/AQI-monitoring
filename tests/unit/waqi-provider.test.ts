@@ -82,7 +82,12 @@ describe('WAQI Air Quality Provider', () => {
 
     it('passes fresh station within 25km and uses Open-Meteo concentrations for NAQI', () => {
       expect(validateWaqiReading(baseReading, nowMs).valid).toBe(true);
-      const scenario = buildCombinedScenario('Delhi', 'Delhi', meteoFixture, baseReading, nowMs);
+      const scenario = buildCombinedScenario(
+        { city: 'Delhi', admin1: 'Delhi' },
+        meteoFixture,
+        baseReading,
+        nowMs
+      );
       expect(scenario.pm25).toBe(135);
       expect(scenario.stationAqi?.usAqi).toBe(195);
       expect(scenario.stationAqi?.mismatchWarning).toBeUndefined();
@@ -93,7 +98,12 @@ describe('WAQI Air Quality Provider', () => {
       expect(validateWaqiReading(stale, nowMs)).toEqual(
         expect.objectContaining({ valid: false, reason: 'stale' })
       );
-      const scenario = buildCombinedScenario('Delhi', 'Delhi', meteoFixture, stale, nowMs);
+      const scenario = buildCombinedScenario(
+        { city: 'Delhi', admin1: 'Delhi' },
+        meteoFixture,
+        stale,
+        nowMs
+      );
       expect(scenario.stationAqi).toBeUndefined();
       expect(scenario.stationFallbackNote).toContain('>3h old');
     });
@@ -101,7 +111,12 @@ describe('WAQI Air Quality Provider', () => {
     it('rejects station reading farther than 25km', () => {
       const far = { ...baseReading, distanceKm: 32.5 };
       expect(validateWaqiReading(far, nowMs)).toEqual({ valid: false, reason: 'far' });
-      const scenario = buildCombinedScenario('Delhi', 'Delhi', meteoFixture, far, nowMs);
+      const scenario = buildCombinedScenario(
+        { city: 'Delhi', admin1: 'Delhi' },
+        meteoFixture,
+        far,
+        nowMs
+      );
       expect(scenario.stationAqi).toBeUndefined();
       expect(scenario.stationFallbackNote).toContain('>25km away');
     });
@@ -113,7 +128,12 @@ describe('WAQI Air Quality Provider', () => {
 
     it('emits plain warning note when station AQI and model AQI differ by >2x', () => {
       const mismatched = { ...baseReading, aqi: 420 };
-      const scenario = buildCombinedScenario('Delhi', 'Delhi', meteoFixture, mismatched, nowMs);
+      const scenario = buildCombinedScenario(
+        { city: 'Delhi', admin1: 'Delhi' },
+        meteoFixture,
+        mismatched,
+        nowMs
+      );
       expect(scenario.stationAqi?.mismatchWarning).toContain('differ by >2x');
     });
   });
