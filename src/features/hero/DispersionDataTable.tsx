@@ -3,6 +3,19 @@
 import React from 'react';
 import { type VentilationWindow, formatHour12 } from '@/domain/naqi';
 
+function TableHead() {
+  return (
+    <thead className="bg-stone-50 text-slate-700 sticky top-0">
+      <tr>
+        <th className="px-2.5 py-1.5 font-semibold">Hour</th>
+        <th className="px-2.5 py-1.5 font-semibold">PM2.5 (µg/m³)</th>
+        <th className="px-2.5 py-1.5 font-semibold">Wind (km/h)</th>
+        <th className="px-2.5 py-1.5 font-semibold">Window</th>
+      </tr>
+    </thead>
+  );
+}
+
 /** Collapsible 24-hour PM2.5 and wind dispersion data table for screen readers and tabular review. */
 export function DispersionDataTable({
   pmData,
@@ -20,14 +33,7 @@ export function DispersionDataTable({
       </summary>
       <div className="overflow-x-auto max-h-56 mt-2 rounded-lg border border-stone-200">
         <table className="w-full text-left border-collapse text-[11px]">
-          <thead className="bg-stone-50 text-slate-700 sticky top-0">
-            <tr>
-              <th className="px-2.5 py-1.5 font-semibold">Hour</th>
-              <th className="px-2.5 py-1.5 font-semibold">PM2.5 (µg/m³)</th>
-              <th className="px-2.5 py-1.5 font-semibold">Wind (km/h)</th>
-              <th className="px-2.5 py-1.5 font-semibold">Window</th>
-            </tr>
-          </thead>
+          <TableHead />
           <tbody className="divide-y divide-stone-100">
             {pmData.slice(0, 24).map((pm, hr) => {
               const isSafe = hr >= vent.startHour && hr < vent.endHour;

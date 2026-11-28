@@ -1,6 +1,9 @@
 {
-  "name": "clear-air-companion",
+  "name": "vayusaathi",
   "version": "1.0.0",
+  "description": "GenAI-powered winter smog and air quality assistant for Indian households (VayuSaathi)",
+  "license": "MIT",
+  "repository": "https://github.com/Aryan24a-git/AQI-monitoring",
   "private": true,
   "engines": {
     "node": "24.x"
@@ -19,7 +22,6 @@
     "test:integration": "vitest run tests/integration",
     "test:coverage": "vitest run --coverage tests/unit",
     "benchmark:plan": "tsx scripts/benchmark-plan.ts",
-    "bench:plan": "tsx scripts/benchmark-plan.ts",
     "bench:cache": "node --expose-gc node_modules/tsx/dist/cli.mjs scripts/bench-cache.ts",
     "bench:api": "tsx scripts/bench-api.ts",
     "readability": "tsx scripts/readability.ts",

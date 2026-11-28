@@ -1,5 +1,5 @@
 # =============================================================================
-# Clear Air Companion — Production Multi-Stage Dockerfile
+# VayuSaathi — Production Multi-Stage Dockerfile
 # Standalone Next.js distribution, non-root user, built-in healthcheck.
 # Satisfies: DEP-001, SEC-002, REL-003, NFR-003
 # =============================================================================

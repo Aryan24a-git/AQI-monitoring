@@ -1,7 +1,7 @@
 # EVIDENCE.md — Scientific Evidence & Source Citations
 > Version: 1.0.0 | Status: VERIFIED | Last updated: 2026-11-22
 
-This document provides the authoritative evidence base for all action catalog items and impact models in Clear Air Companion, satisfying **REQ-007**, **DATA-004**, and **Domain Rule D4**.
+This document provides the authoritative evidence base for all action catalog items and impact models in VayuSaathi, satisfying **REQ-007**, **DATA-004**, and **Domain Rule D4**.
 
 ---
 

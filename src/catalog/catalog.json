@@ -1,5 +1,5 @@
 {
-  "$schema": "https://clear-air-companion.local/catalog.schema.json",
+  "$schema": "https://vayusaathi.local/catalog.schema.json",
   "version": "1.0.0",
   "lastUpdated": "2026-11-22",
   "actions": [

@@ -1,4 +1,4 @@
-# ACCESSIBILITY.md — Clear Air Companion
+# ACCESSIBILITY.md — VayuSaathi
 
 > Automated and manual status entries below are historical notes unless re-run against the exact release commit. Keep manual items marked unverified until a person completes them.
 

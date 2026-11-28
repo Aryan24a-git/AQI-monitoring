@@ -2,7 +2,7 @@
 > Version: 1.0.0 | Status: VERIFIED
 
 ## 1. Overview
-The action catalog (`src/catalog/catalog.json`) serves as the single source of truth for all Clear Air Companion recommendations. Under Domain Rule D6, the LLM is strictly prohibited from inventing advice; it may only select, order, and phrase actions defined here.
+The action catalog (`src/catalog/catalog.json`) serves as the single source of truth for all VayuSaathi recommendations. Under Domain Rule D6, the LLM is strictly prohibited from inventing advice; it may only select, order, and phrase actions defined here.
 
 ## 2. Evidence Standards (DATA-004)
 Every catalog action MUST contain a complete impact evidence block:

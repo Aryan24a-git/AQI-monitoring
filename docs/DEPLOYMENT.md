@@ -1,4 +1,4 @@
-# docs/DEPLOYMENT.md — Clear Air Companion Deployment Guide
+# docs/DEPLOYMENT.md — VayuSaathi Deployment Guide
 > Version: 2.0.0 | Stage: V2-28 | Authority: DEP-001 to DEP-004
 
 This document describes the local standalone build and container deployment shape. No hosted deployment is currently claimed; validate platform-specific settings before release.
@@ -7,7 +7,7 @@ This document describes the local standalone build and container deployment shap
 
 ## 1. Deployment Architecture
 
-Clear Air Companion is packaged as an Alpine Docker container running Next.js standalone output on Node 24.
+VayuSaathi is packaged as an Alpine Docker container running Next.js standalone output on Node 24.
 
 ```
                     ┌────────────────────────────┐
@@ -63,28 +63,28 @@ Clear Air Companion is packaged as an Alpine Docker container running Next.js st
 
 ### Building the Image
 ```bash
-docker build -t clear-air-companion:v2.0.0 .
+docker build -t vayusaathi:v2.0.0 .
 ```
 
 ### Running with Zero Keys (Basic Mode)
 ```bash
 docker run -d \
-  --name clear-air-companion \
+  --name vayusaathi \
   -p 3000:3000 \
   -e NODE_ENV=production \
   -e LOG_LEVEL=info \
-  clear-air-companion:v2.0.0
+  vayusaathi:v2.0.0
 ```
 
 ### Running with Groq AI Key (Copilot AI Enabled)
 ```bash
 docker run -d \
-  --name clear-air-companion \
+  --name vayusaathi \
   -p 3000:3000 \
   -e NODE_ENV=production \
   -e GROQ_API_KEY="your_groq_api_key_here" \
   -e LOG_LEVEL=info \
-  clear-air-companion:v2.0.0
+  vayusaathi:v2.0.0
 ```
 
 ---
@@ -94,11 +94,11 @@ docker run -d \
 ### 4.1 Google Cloud Run Deployment
 ```bash
 # 1. Build and push image to Google Artifact Registry
-gcloud builds submit --tag gcr.io/$PROJECT_ID/clear-air-companion:latest
+gcloud builds submit --tag gcr.io/$PROJECT_ID/vayusaathi:latest
 
 # 2. Deploy to Cloud Run with unauthenticated access and autoscaling
-gcloud run deploy clear-air-companion \
-  --image gcr.io/$PROJECT_ID/clear-air-companion:latest \
+gcloud run deploy vayusaathi \
+  --image gcr.io/$PROJECT_ID/vayusaathi:latest \
   --platform managed \
   --region asia-south1 \
   --allow-unauthenticated \

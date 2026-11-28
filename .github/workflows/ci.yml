@@ -84,9 +84,9 @@ jobs:
 
       - name: Build Docker image and run smoke suite against container
         run: |
-          docker build -t clear-air-companion:ci .
-          docker run -d --name cac-smoke -p 3000:3000 -e NODE_ENV=production clear-air-companion:ci
-          trap 'docker rm -f cac-smoke || true' EXIT
+          docker build -t vayusaathi:ci .
+          docker run -d --name vayusaathi-smoke -p 3000:3000 -e NODE_ENV=production vayusaathi:ci
+          trap 'docker rm -f vayusaathi-smoke || true' EXIT
           for i in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:3000/api/health >/dev/null 2>&1; then
               break

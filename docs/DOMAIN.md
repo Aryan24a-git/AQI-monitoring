@@ -1,4 +1,4 @@
-# DOMAIN.md — Clear Air Companion Domain Rules
+# DOMAIN.md — VayuSaathi Domain Rules
 
 > These rules document design intent. The current runtime behavior is implemented in `src/domain/`; verify current thresholds and safeguards there before treating any numeric value below as an operational promise.
 

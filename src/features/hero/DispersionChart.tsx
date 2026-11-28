@@ -171,6 +171,38 @@ function hasChartData(
   );
 }
 
+function ChartRegion({
+  location,
+  vent,
+  bandColor,
+  scrub,
+}: {
+  location: LocationScenario;
+  vent: VentilationWindow;
+  bandColor: string;
+  scrub: ReturnType<typeof useChartScrubbing>;
+}) {
+  return (
+    <div
+      role="region"
+      className="relative w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-teal-600 rounded-xl"
+      tabIndex={0}
+      onKeyDown={scrub.handleKeyDown}
+      aria-label="24-hour smog dispersion chart. Use left and right arrow keys to step."
+    >
+      <DispersionChartSvg
+        pmData={location.hourlyPM25}
+        windData={location.hourlyWind}
+        vent={vent}
+        bandColor={bandColor}
+        {...scrub}
+        onPointer={scrub.handlePointer}
+        onHoverChange={scrub.setIsHovering}
+      />
+    </div>
+  );
+}
+
 /** Interactive 24-hour PM2.5 and wind dispersion chart with keyboard & pointer scrubbing. */
 export function DispersionChart({ location, vent, bandColor }: DispersionChartProps) {
   const scrub = useChartScrubbing(vent?.startHour ?? 12);
@@ -189,23 +221,7 @@ export function DispersionChart({ location, vent, bandColor }: DispersionChartPr
         pmValue={location.hourlyPM25[scrub.activeHour]}
         windValue={location.hourlyWind[scrub.activeHour]}
       />
-      <div
-        role="region"
-        className="relative w-full overflow-hidden focus:outline-none focus:ring-2 focus:ring-teal-600 rounded-xl"
-        tabIndex={0}
-        onKeyDown={scrub.handleKeyDown}
-        aria-label="24-hour smog dispersion chart. Use left and right arrow keys to step."
-      >
-        <DispersionChartSvg
-          pmData={location.hourlyPM25}
-          windData={location.hourlyWind}
-          vent={vent}
-          bandColor={bandColor}
-          {...scrub}
-          onPointer={scrub.handlePointer}
-          onHoverChange={scrub.setIsHovering}
-        />
-      </div>
+      <ChartRegion location={location} vent={vent} bandColor={bandColor} scrub={scrub} />
       <JumpButtons vent={vent} activeHour={scrub.activeHour} onSelect={scrub.setActiveHour} />
       <VentilationCallouts vent={vent} />
       <DispersionDataTable

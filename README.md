@@ -1,4 +1,4 @@
-# VayuSaathi (वायु साथी) — Clear Air Companion 🌬️
+# VayuSaathi (वायु साथी) 🌬️
 
 > **Actionable, privacy-first winter smog resilience companion for Indian households and communities.**  
 > Moving families from passive AQI panic to practical physical engineering, safe ventilation windows, and collective clean air action.
@@ -42,14 +42,14 @@ flowchart TD
     LS["🔒 Browser LocalStorage (Zero Server Persistence)"]
 
     subgraph AppServer ["Next.js App Server (Node 24 Standalone)"]
-        API["API Routes (/api/city-scenario, /api/playbook, /api/ask)"]
+        API["API Routes (/api/city-scenario, /api/air-quality, /api/playbook, /api/ask, /api/bulletin, /api/ready, /api/health)"]
         RateLimit["TokenBucket Limiter & Security Headers (Strict CSP)"]
         
         subgraph DomainEngine ["Domain Engine (src/domain)"]
-            NAQI["CPCB NAQI Sub-Index Calculator"]
-            Dispersion["Diurnal Dispersion & Safe Vent Algorithm"]
+            NAQI["CPCB NAQI & Safe Ventilation Window"]
+            Emissions["Unified Emissions & Exposure Constants"]
+            Playbook["Deterministic & AI Playbook Synthesizer"]
             Catalog["Curated Action Catalog (D1-D6 Rules)"]
-            ImpactModel["Grounded Exposure & Cigarette Math"]
         end
         
         LLMClient["Groq LLM Client (openai/gpt-oss-120b)"]
@@ -78,13 +78,12 @@ flowchart TD
 
 | Feature | Description | Impact |
 |---|---|---|
-| **Safe Cross-Ventilation Window** | Diurnal curve algorithm identifying lowest-PM2.5 midday hours | Prevents carbon dioxide / VOC buildup while keeping peak smog out |
-| **Evening Inversion Countdown** | Real-time warning before atmospheric boundary layer collapses | Tells families the exact hour to seal doors and balcony sliders |
+| **Safe Cross-Ventilation & Seal Window** | Diurnal curve algorithm identifying lowest-PM2.5 midday hours and evening seal hour | Prevents indoor CO₂ / VOC buildup while keeping peak smog out |
 | **Budget-Tiered Playbook** | Actionable engineering from ₹0 (wet mopping, damp towel draft stopping) to ₹2,000 DIY box-fan filters | Accessible protection for low- and middle-income families |
 | **Live Impact Meter** | Rough, cited estimates of % exposure cut, cigarettes avoided, and CO₂ saved | Helps families understand the value of daily habits |
 | **Grounded AI Copilot** | Groq (openai/gpt-oss-120b) assistant with strict guardrails (zero medical claims, grounded numbers) | Plain English/Hinglish answers to household air quality questions |
 | **Bilingual WhatsApp Generator** | Instant morning alert generator formatted for society and RWA groups (English + Hindi) | Spreads clean air practices across entire neighborhoods |
-| **Privacy-first by design** | No accounts or logins. Your profile stays in your browser (localStorage). When AI is on, your question and the day's air data go to Groq; city names and rounded coordinates go to air data providers. No server-side user database. |
+| **Privacy-first by design** | No accounts or logins. Profile stays in browser `localStorage`; coordinates are rounded to 2 decimals. | When AI is on, your question and the day's air data go to Groq; city names and rounded coordinates go to air data providers. |
 
 ---
 
@@ -155,8 +154,8 @@ npm run build
 │   ├── app/                 # Next.js App Router (layout, page, API routes)
 │   ├── catalog/             # Curated, scientific clean-air action catalog
 │   ├── domain/              # Pure TypeScript business & atmospheric logic
-│   │   ├── naqi.ts          # Official CPCB NAQI calculation & breakpoints
-│   │   ├── ventilation.ts   # Diurnal boundary-layer ventilation algorithm
+│   │   ├── emissions.ts     # Unified emissions, exposure & conversion constants
+│   │   ├── naqi.ts          # Official CPCB NAQI calculation & ventilation window
 │   │   ├── playbookEngine.ts# Deterministic & AI playbook synthesizers
 │   │   └── scenarios.ts     # Household profile definitions & impact models
 │   ├── features/            # Modular React client UI components
@@ -190,11 +189,14 @@ VayuSaathi provides actionable physical engineering and environmental lifestyle 
 - **Live demo**: No hosted demo URL is currently published. Run the app locally using the Quickstart steps above.
 - **AI availability**: Live Groq responses require a valid server-side `GROQ_API_KEY`; deterministic guidance remains available without it. Live-provider behavior depends on upstream service availability.
 
-## 🧾 Current Verification
+## 📚 Documentation
 
-Latest local verification on 2026-11-27: `npm run check` passed with 148 unit/integration tests across 33 files and zero lint errors (65 ESLint warnings); `npm run build` succeeded; `npm run test:e2e` reported 64 passed and 2 skipped across desktop, tablet, and mobile, with no critical or serious axe violations. Both dependency audits reported zero vulnerabilities. The catalog validator accepted 26 actions and flagged 6 for D3 review. No hosted demo URL, deployed-service smoke test, or manual screen-reader sign-off is currently recorded.
-
-See [EVALUATION_PACK.md](./EVALUATION_PACK.md) for the current feature-to-criteria map and verification limits. Do not rely on older generated evidence files for current dependency versions or feature status.
+- [Architecture](./docs/ARCHITECTURE.md)
+- [Security & Threat Model](./docs/SECURITY.md)
+- [Accessibility](./docs/ACCESSIBILITY.md)
+- [Sources & Evidence](./docs/SOURCES.md)
+- [API Reference](./docs/API.md)
+- [Deployment Guide](./docs/DEPLOYMENT.md)
 
 ---
 

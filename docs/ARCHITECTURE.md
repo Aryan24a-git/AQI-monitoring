@@ -21,7 +21,7 @@ VayuSaathi is a Next.js App Router application with a browser UI, pure TypeScrip
 
 ## API routes
 
-Implemented handlers live in `src/app/api/`: `air-quality`, `ask`, `bulletin`, `city-scenario`, `geocode`, `health`, `plan`, `plan/narrate`, `playbook`, and `ready`. The source route files and [API reference](./API.md) are authoritative. There is no photo-audit endpoint.
+Implemented handlers live in `src/app/api/`: `air-quality`, `ask`, `bulletin`, `city-scenario`, `health`, `playbook`, and `ready`. The source route files and [API reference](./API.md) are authoritative. There is no photo-audit endpoint.
 
 ## Quality and deployment
 
