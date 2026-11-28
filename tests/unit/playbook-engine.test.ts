@@ -48,4 +48,24 @@ describe('Deterministic Playbook Engine', () => {
 
     expect(playbook.explainer.vulnerabilityNote).toContain('High-Priority Protection');
   });
+
+  it('omits wind and PM10 details when measurements are absent (manual entry)', () => {
+    const loc = {
+      id: 'manual-180',
+      city: 'Manual Entry',
+      shortCity: 'Manual Entry',
+      subtitle: 'Manual PM2.5 entry',
+      sourceLabel: 'Manual entry',
+      pm25: 180,
+      hourlyPM25: [],
+      hourlyWind: [],
+      isSynthetic: false,
+    };
+    const impact = computeDeterministicImpact(loc, DEFAULT_PROFILE);
+    const playbook = buildDeterministicPlaybook(loc, DEFAULT_PROFILE, null, impact);
+    expect(impact.aqi.isPm25Only).toBe(true);
+    expect(playbook.iaqHacks[0].detail).not.toContain('undefined');
+    expect(playbook.explainer.emissionWhy).not.toContain('km/h');
+    expect(playbook.explainer.emissionWhy).not.toContain('undefined');
+  });
 });

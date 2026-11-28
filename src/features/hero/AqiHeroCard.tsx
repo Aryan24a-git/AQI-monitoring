@@ -62,8 +62,14 @@ function PollutantGrid({ location }: { location: LocationScenario }) {
           className="bg-stone-50 border border-stone-200/80 rounded-xl p-2.5 text-center"
         >
           <div className="text-[11px] text-slate-600 font-medium">{t.label}</div>
-          <div className="font-bold text-sm sm:text-base text-slate-900 mt-0.5">{t.value}</div>
-          <div className="text-[10px] text-slate-600 font-medium">{t.unit}</div>
+          {t.value != null ? (
+            <>
+              <div className="font-bold text-sm sm:text-base text-slate-900 mt-0.5">{t.value}</div>
+              <div className="text-[10px] text-slate-600 font-medium">{t.unit}</div>
+            </>
+          ) : (
+            <div className="text-[11px] text-slate-600 font-medium mt-1">Not measured</div>
+          )}
         </div>
       ))}
     </div>
@@ -96,7 +102,15 @@ function CigaretteEquivalentNote({
   );
 }
 
-function HeroBadgeHeader({ location, dominant }: { location: LocationScenario; dominant: string }) {
+function HeroBadgeHeader({
+  location,
+  dominant,
+  isPm25Only,
+}: {
+  location: LocationScenario;
+  dominant: string;
+  isPm25Only?: boolean;
+}) {
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <span
@@ -108,12 +122,15 @@ function HeroBadgeHeader({ location, dominant }: { location: LocationScenario; d
         {location.isSynthetic ? 'Demo scenario (synthetic data)' : location.sourceLabel}
       </span>
       <span className="text-[11px] font-medium text-slate-700">Dominant: {dominant}</span>
+      {isPm25Only && (
+        <span className="text-[11px] text-slate-600">NAQI estimated from PM2.5 only</span>
+      )}
     </div>
   );
 }
 
 export function AqiHeroCard({ location, impact }: AqiHeroCardProps) {
-  const { naqi, dominant, band, cigsPerDay } = impact.aqi;
+  const { naqi, dominant, band, cigsPerDay, isPm25Only } = impact.aqi;
   return (
     <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden flex flex-col justify-between">
       <div
@@ -123,7 +140,7 @@ export function AqiHeroCard({ location, impact }: AqiHeroCardProps) {
       <div className="p-5 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <HeroBadgeHeader location={location} dominant={dominant} />
+            <HeroBadgeHeader location={location} dominant={dominant} isPm25Only={isPm25Only} />
             <h2 className="font-bold text-xl text-slate-900 mt-1.5">{location.city}</h2>
             <p className="text-xs text-slate-600 mt-0.5">{location.subtitle}</p>
             <StationAqiNote location={location} />

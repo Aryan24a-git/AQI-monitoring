@@ -49,7 +49,10 @@ function buildIaqHacks(
     {
       id: 'iaq-1',
       title: 'Wet Mop Only — Skip Dry Broom Sweeping Today',
-      detail: `At ${loc.pm10} µg/m³ PM10, dry jhadu kicks settled road dust right back into breathing height. Use a damp microfiber mop or wet cloth.`,
+      detail:
+        loc.pm10 != null
+          ? `At ${loc.pm10} µg/m³ PM10, dry jhadu kicks settled road dust right back into breathing height. Use a damp microfiber mop or wet cloth.`
+          : 'Dry jhadu kicks settled road dust right back into breathing height. Use a damp microfiber mop or wet cloth.',
       tag: '₹0 Habit',
       exposurePct: Math.round(impact.maxExposureDropPct * 0.3),
       co2Kg: 0.05,
@@ -198,8 +201,11 @@ export function buildDeterministicPlaybook(
     profile.vulnerabilities.includes('asthma');
 
   const healthWhy = `Keeping windows shut outside ${ventPhrase}, wet mopping, and cutting indoor smoke reduces your household inhaled PM2.5 load by roughly ${impact.maxExposureDropPct}% — equal to avoiding ~${impact.maxCigsAvoided} cigarettes/day today.`;
-  const windDesc = loc.wind < 8 ? 'calm' : 'light-breeze';
-  const emissionWhy = `${impact.commuteSwapLabel} plus cleaner kitchen habits prevents ${impact.totalCo2Kg} kg CO₂ and ~${impact.totalNoxG}g of local NOx from trapping in ${loc.shortCity}'s ${windDesc} ${loc.wind} km/h winter air.`;
+  const windClause =
+    loc.wind != null
+      ? `trapping in ${loc.shortCity}'s ${loc.wind < 8 ? 'calm' : 'light-breeze'} ${loc.wind} km/h winter air`
+      : `adding to ${loc.shortCity}'s winter smog`;
+  const emissionWhy = `${impact.commuteSwapLabel} plus cleaner kitchen habits prevents ${impact.totalCo2Kg} kg CO₂ and ~${impact.totalNoxG}g of local NOx from ${windClause}.`;
   const vulnerabilityNote = hasVulnerable
     ? `High-Priority Protection (${formatVulnList(profile.vulnerabilities)}): ${
         isSevere

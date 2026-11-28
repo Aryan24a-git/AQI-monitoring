@@ -72,6 +72,14 @@ describe('CPCB NAQI calculations', () => {
       expect(safe.error.code).toBe('INVALID_INPUT');
     }
   });
+
+  it('supports PM2.5-only NAQI without inventing PM10 or NO2', () => {
+    const result = calculateCPCBNAQI(150);
+    expect(result.isPm25Only).toBe(true);
+    expect(result.dominant).toBe('PM2.5');
+    expect(result.subIndices.subPM10).toBeUndefined();
+    expect(result.subIndices.subNO2).toBeUndefined();
+  });
 });
 
 describe('Thermal Inversion & Ventilation Window (REQ-021)', () => {

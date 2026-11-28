@@ -21,22 +21,25 @@ export async function fetchLiveByCoords(lat: number, lon: number): Promise<Locat
   if (!res.ok) {
     throw new Error(`Air quality service unavailable (HTTP ${res.status})`);
   }
-  const reading = (await res.json()) as { pm25: number; aqi: number; timestamp: string };
+  const reading = (await res.json()) as {
+    pm25: number;
+    aqi: number;
+    timestamp: string;
+    source?: string;
+  };
   const pm25 = Math.max(1, Math.round(reading.pm25));
   const timeStr = new Date(reading.timestamp).toLocaleTimeString('en-IN', {
     hour: '2-digit',
     minute: '2-digit',
   });
+  const sourceText = reading.source?.trim() || 'Live air-quality reading';
   return {
     id: `gps-${rLat}-${rLon}`,
     city: `Your Area (${rLat}, ${rLon})`,
     shortCity: 'Your Area',
-    subtitle: `Station reading (WAQI) · ${timeStr}`,
-    sourceLabel: `Live station observation (WAQI)`,
+    subtitle: `${sourceText} · ${timeStr}`,
+    sourceLabel: sourceText,
     pm25,
-    pm10: Math.round(pm25 * 1.4),
-    no2: 35,
-    wind: 5,
     hourlyPM25: [],
     hourlyWind: [],
     hourlyError: 'Hourly forecast unavailable',
@@ -54,9 +57,6 @@ export function buildManualScenario(pm25Raw: number, cityLabel = 'Manual Entry')
     subtitle: `Manual PM2.5 entry at ${nowStr}`,
     sourceLabel: `Manual entry (${nowStr})`,
     pm25,
-    pm10: Math.round(pm25 * 1.4),
-    no2: 30,
-    wind: 5,
     hourlyPM25: [],
     hourlyWind: [],
     hourlyError: 'Hourly forecast unavailable',

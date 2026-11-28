@@ -115,9 +115,21 @@ export function buildWaqiScenario(
     subtitle: `Station reading (WAQI) · ${obsTime}`,
     sourceLabel: 'Station observation (WAQI / Air Quality Open Data)',
     pm25: waqi.pm25,
-    pm10: waqi.pm10,
-    no2: waqi.no2 ?? Math.round(meteo?.aq.current.nitrogen_dioxide ?? 0),
-    wind: waqi.windKmh ?? Math.max(1, Math.round(meteo?.wx.current.wind_speed_10m ?? 5)),
+    ...(waqi.pm10 !== undefined
+      ? { pm10: waqi.pm10 }
+      : meteo
+        ? { pm10: Math.round(meteo.aq.current.pm10) }
+        : {}),
+    ...(waqi.no2 !== undefined
+      ? { no2: waqi.no2 }
+      : meteo?.aq.current.nitrogen_dioxide != null
+        ? { no2: Math.round(meteo.aq.current.nitrogen_dioxide) }
+        : {}),
+    ...(waqi.windKmh !== undefined
+      ? { wind: waqi.windKmh }
+      : meteo
+        ? { wind: Math.max(1, Math.round(meteo.wx.current.wind_speed_10m)) }
+        : {}),
     hourlyPM25: hasHourly && pmResult?.ok ? pmResult.series : [],
     hourlyWind: hasHourly && windResult?.ok ? windResult.series : [],
     ...(hasHourly ? {} : { hourlyError: 'Hourly forecast unavailable' }),

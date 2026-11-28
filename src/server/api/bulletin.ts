@@ -22,7 +22,7 @@ const BulletinRequestSchema = z.object({
   rwaName: z.string().trim().max(120),
   city: z.string().trim().min(1).max(120),
   shortCity: z.string().trim().min(1).max(120),
-  wind: z.number().min(0).max(150),
+  wind: z.number().min(0).max(150).optional().nullable(),
   pm25: z.number().min(0).max(1500),
   naqi: z.number().min(0).max(1000),
   bandLabel: z.string().min(1).max(60),
@@ -50,9 +50,11 @@ export async function handleBulletin(req: NextRequest) {
       v.lang === 'hi'
         ? 'Write in natural, clear Hindi (Devanagari script).'
         : 'Write in clear, concise English.';
+    const windSystemNote = v.wind != null ? `wind speed (${v.wind} km/h), ` : '';
+    const windPromptNote = v.wind != null ? `Wind: ${v.wind} km/h, ` : '';
     const aiText = await createLlmClient().complete({
-      system: `Write a fresh, neighborly WhatsApp RWA air-quality bulletin using WhatsApp *bold* formatting and emojis. ${langInstruction} Include the exact CPCB NAQI, PM2.5, safe ventilation window, seal time, wind speed (${v.wind} km/h), and 2 practical community actions (no leaf burning, low-emission commute/wet mopping). Keep under 900 characters. Zero medical claims, no URLs.`,
-      prompt: `Society: ${v.rwaName || v.shortCity + ' RWA'}, City: ${v.city}, NAQI: ${v.naqi} (${v.bandLabel}), PM2.5: ${v.pm25} µg/m³, Cigs eq: ${v.cigsPerDay}/day, Wind: ${v.wind} km/h, Safe Window: ${v.windowLabel}, Seal By: ${v.sealLabel}.`,
+      system: `Write a fresh, neighborly WhatsApp RWA air-quality bulletin using WhatsApp *bold* formatting and emojis. ${langInstruction} Include the exact CPCB NAQI, PM2.5, safe ventilation window, seal time, ${windSystemNote}and 2 practical community actions (no leaf burning, low-emission commute/wet mopping). Keep under 900 characters. Zero medical claims, no URLs.`,
+      prompt: `Society: ${v.rwaName || v.shortCity + ' RWA'}, City: ${v.city}, NAQI: ${v.naqi} (${v.bandLabel}), PM2.5: ${v.pm25} µg/m³, Cigs eq: ${v.cigsPerDay}/day, ${windPromptNote}Safe Window: ${v.windowLabel}, Seal By: ${v.sealLabel}.`,
       maxTokens: 800,
       timeoutMs: 12_000,
     });

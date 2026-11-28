@@ -30,9 +30,9 @@ export interface LocationScenario {
   subtitle: string;
   sourceLabel: string;
   pm25: number;
-  pm10: number;
-  no2: number;
-  wind: number;
+  pm10?: number;
+  no2?: number;
+  wind?: number;
   hourlyPM25: number[];
   hourlyWind: number[];
   hourlyError?: string;

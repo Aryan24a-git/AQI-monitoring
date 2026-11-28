@@ -34,7 +34,7 @@ const WaqiDataSchema = z.object({
 export interface WaqiStationReading {
   aqi: number;
   pm25: number;
-  pm10: number;
+  pm10?: number;
   hasPm25: boolean;
   no2?: number;
   windKmh?: number;
@@ -168,7 +168,7 @@ export async function fetchWaqiStation(
   }
 
   const pm25 = usAqiToPm25(pm25Sub);
-  const pm10 = d.iaqi?.pm10?.v != null ? usAqiToPm10(d.iaqi.pm10.v) : Math.round(pm25 * 1.4);
+  const pm10 = d.iaqi?.pm10?.v != null ? usAqiToPm10(d.iaqi.pm10.v) : undefined;
   const distanceKm = d.city?.geo ? haversineKm(lat, lon, d.city.geo[0], d.city.geo[1]) : undefined;
   const reading: WaqiStationReading = {
     aqi: Number.isFinite(rawAqi) ? Math.round(rawAqi) : Math.round(pm25Sub),

@@ -115,7 +115,8 @@ export interface NaqiResult {
   dominant: 'PM2.5' | 'PM10' | 'NO₂';
   band: CpcbBand;
   cigsPerDay: number;
-  subIndices: { subPM25: number; subPM10: number; subNO2: number };
+  isPm25Only?: boolean;
+  subIndices: { subPM25: number; subPM10?: number; subNO2?: number };
 }
 
 export interface NaqiError {
@@ -123,40 +124,60 @@ export interface NaqiError {
   message: string;
 }
 
-export function calculateCPCBNAQI(pm25: number, pm10: number, no2 = 0): NaqiResult {
-  if (!Number.isFinite(pm25) || !Number.isFinite(pm10) || !Number.isFinite(no2)) {
+export function calculateCPCBNAQI(pm25: number, pm10?: number, no2?: number): NaqiResult {
+  if (
+    !Number.isFinite(pm25) ||
+    (pm10 !== undefined && !Number.isFinite(pm10)) ||
+    (no2 !== undefined && !Number.isFinite(no2))
+  ) {
     throw new TypeError(
       `CPCB NAQI inputs must be finite numbers; received pm25=${pm25}, pm10=${pm10}, no2=${no2}`
     );
   }
 
   const subPM25 = Math.round(calcSubIndex(pm25, PM25_BREAKPOINTS));
-  const subPM10 = Math.round(calcSubIndex(pm10, PM10_BREAKPOINTS));
-  const subNO2 = Math.round(calcSubIndex(no2, NO2_BREAKPOINTS));
+  const subPM10 = pm10 !== undefined ? Math.round(calcSubIndex(pm10, PM10_BREAKPOINTS)) : undefined;
+  const subNO2 = no2 !== undefined ? Math.round(calcSubIndex(no2, NO2_BREAKPOINTS)) : undefined;
 
   let naqi = subPM25;
   let dominant: 'PM2.5' | 'PM10' | 'NO₂' = 'PM2.5';
-  if (subPM10 > naqi) {
+  if (subPM10 !== undefined && subPM10 > naqi) {
     naqi = subPM10;
     dominant = 'PM10';
   }
-  if (subNO2 > naqi) {
+  if (subNO2 !== undefined && subNO2 > naqi) {
     naqi = subNO2;
     dominant = 'NO₂';
   }
   naqi = Math.min(500, Math.max(1, naqi));
   const band = CPCB_BANDS.find((b) => naqi <= b.max) || CPCB_BANDS[CPCB_BANDS.length - 1];
   const cigsPerDay = Number((Math.max(0, pm25) / PM25_PER_CIGARETTE.value).toFixed(1));
+  const isPm25Only = pm10 === undefined && no2 === undefined;
 
-  return { naqi, dominant, band, cigsPerDay, subIndices: { subPM25, subPM10, subNO2 } };
+  return {
+    naqi,
+    dominant,
+    band,
+    cigsPerDay,
+    ...(isPm25Only ? { isPm25Only: true } : {}),
+    subIndices: {
+      subPM25,
+      ...(subPM10 !== undefined ? { subPM10 } : {}),
+      ...(subNO2 !== undefined ? { subNO2 } : {}),
+    },
+  };
 }
 
 export function safeCalculateCPCBNAQI(
   pm25: number,
-  pm10: number,
-  no2 = 0
+  pm10?: number,
+  no2?: number
 ): Result<NaqiResult, NaqiError> {
-  if (!Number.isFinite(pm25) || !Number.isFinite(pm10) || !Number.isFinite(no2)) {
+  if (
+    !Number.isFinite(pm25) ||
+    (pm10 !== undefined && !Number.isFinite(pm10)) ||
+    (no2 !== undefined && !Number.isFinite(no2))
+  ) {
     return err({
       code: 'INVALID_INPUT',
       message: 'Pollutant concentrations must be finite numbers',
