@@ -14,9 +14,10 @@ describe('WAQI Air Quality Provider', () => {
     clearWaqiCache();
   });
 
-  it('converts US EPA AQI sub-indices back to PM2.5 and PM10 µg/m³', () => {
-    expect(usAqiToPm25(50)).toBe(12);
+  it('converts US EPA AQI (2024 breakpoints) sub-indices back to PM2.5 and PM10 µg/m³', () => {
+    expect(usAqiToPm25(50)).toBe(9);
     expect(usAqiToPm25(150)).toBe(55);
+    expect(usAqiToPm25(200)).toBe(125);
     expect(usAqiToPm10(100)).toBe(154);
   });
 

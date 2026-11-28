@@ -104,16 +104,19 @@ function invertBreakpoints(
   return Math.round(clamped);
 }
 
+/**
+ * Converts US EPA AQI (2024 revised breakpoints, effective May 6 2024) to approximate PM2.5 µg/m³.
+ */
 export function usAqiToPm25(aqi: number): number {
   return Math.max(
     1,
     invertBreakpoints(aqi, [
-      [0, 50, 0, 12],
-      [51, 100, 12.1, 35.4],
+      [0, 50, 0, 9.0],
+      [51, 100, 9.1, 35.4],
       [101, 150, 35.5, 55.4],
-      [151, 200, 55.5, 150.4],
-      [201, 300, 150.5, 250.4],
-      [301, 500, 250.5, 500.4],
+      [151, 200, 55.5, 125.4],
+      [201, 300, 125.5, 225.4],
+      [301, 500, 225.5, 325.4],
     ])
   );
 }

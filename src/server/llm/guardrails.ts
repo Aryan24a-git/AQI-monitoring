@@ -52,23 +52,27 @@ export function validateNarrative(raw: unknown, grounding: GroundingInput): Guar
   if (ids.some((id) => !grounding.selectedIds.includes(id))) {
     return { ok: false, reason: 'unknown_or_unselected_action' };
   }
-  if (!hasOnlySuppliedNumbers(text, grounding.impacts)) {
+  if (!areNumbersGrounded(text, collectImpactNumbers(grounding.impacts))) {
     return { ok: false, reason: 'unsupported_number' };
   }
   return { ok: true, value: parsed.data };
 }
 
-function hasOnlySuppliedNumbers(
-  text: string,
-  impacts: ReadonlyMap<string, readonly string[]>
-): boolean {
+function collectImpactNumbers(impacts: ReadonlyMap<string, readonly string[]>): Set<string> {
   const allowed = new Set<string>();
   for (const values of impacts.values()) {
     for (const value of values) allowed.add(value);
   }
-  const textWithoutIds = text.replace(/act-\d{3}/gi, '');
-  const numbers = textWithoutIds.match(/(?<![A-Za-z0-9])\d+(?:\.\d+)?(?![A-Za-z0-9])/g) ?? [];
-  return numbers.every((number) => allowed.has(number));
+  return allowed;
+}
+
+export function extractStandaloneNumbers(text: string): string[] {
+  const textWithoutIds = text.replace(/(?:act|iaq|swap)-\d+/gi, '');
+  return textWithoutIds.match(/(?<![A-Za-z0-9])\d+(?:\.\d+)?(?![A-Za-z0-9])/g) ?? [];
+}
+
+export function areNumbersGrounded(text: string, allowed: ReadonlySet<string>): boolean {
+  return extractStandaloneNumbers(text).every((number) => allowed.has(number));
 }
 
 export function classifyQuestionScope(question: string): 'air' | 'indoor' | 'living' | 'off_topic' {

@@ -19,8 +19,6 @@ async function postPlaybookAi(state: VayuState, showToast: ToastFn) {
       body: JSON.stringify({
         location: state.location,
         profile: state.profile,
-        vent: state.vent,
-        impact: state.impact,
         aiConsent: true,
       }),
     });

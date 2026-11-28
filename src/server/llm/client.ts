@@ -1,6 +1,8 @@
 import { DEFAULT_GROQ_MODEL, getEnv } from '../config/env';
 import { logger } from '../logging/logger';
 
+export const AI_PROVIDER_LABEL = 'Groq Grounded AI';
+
 export interface LlmRequest {
   system: string;
   prompt: string;

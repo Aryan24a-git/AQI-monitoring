@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { formatWhatsAppBulletin } from '@/domain/bulletinTemplate';
-import { createLlmClient } from '@/server/llm/client';
+import { AI_PROVIDER_LABEL, createLlmClient } from '@/server/llm/client';
 import { getRequestId, REQUEST_ID_HEADER } from '@/server/http/requestId';
 import {
   MemoryBucketStore,
@@ -69,7 +69,7 @@ export async function handleBulletin(req: NextRequest) {
       bulletinText,
       lang: parsed.value.lang,
       source,
-      sourceLabel: source === 'ai' ? 'Groq Grounded AI' : 'VayuSaathi Community Advisory Engine',
+      sourceLabel: source === 'ai' ? AI_PROVIDER_LABEL : 'VayuSaathi Community Advisory Engine',
       generatedAt: new Date().toISOString(),
     },
     200,

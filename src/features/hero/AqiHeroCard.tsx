@@ -48,8 +48,15 @@ function StationAqiNote({ location }: { location: LocationScenario }) {
 }
 
 function PollutantGrid({ location }: { location: LocationScenario }) {
+  const isFromStationAqi =
+    location.stationAqi != null || /station|waqi/i.test(location.sourceLabel);
   const tiles = [
-    { label: 'PM2.5', value: location.pm25, unit: 'µg/m³' },
+    {
+      label: 'PM2.5',
+      value: location.pm25,
+      unit: 'µg/m³',
+      note: isFromStationAqi ? 'approx. from station AQI' : undefined,
+    },
     { label: 'PM10', value: location.pm10, unit: 'µg/m³' },
     { label: 'NO₂', value: location.no2, unit: 'µg/m³' },
     { label: 'Wind', value: location.wind, unit: 'km/h' },
@@ -66,6 +73,9 @@ function PollutantGrid({ location }: { location: LocationScenario }) {
             <>
               <div className="font-bold text-sm sm:text-base text-slate-900 mt-0.5">{t.value}</div>
               <div className="text-[10px] text-slate-600 font-medium">{t.unit}</div>
+              {'note' in t && t.note && (
+                <div className="text-[9px] text-slate-500 leading-tight mt-0.5">{t.note}</div>
+              )}
             </>
           ) : (
             <div className="text-[11px] text-slate-600 font-medium mt-1">Not measured</div>
