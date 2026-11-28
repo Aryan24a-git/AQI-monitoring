@@ -12,12 +12,12 @@ export default defineConfig({
     globals: true,
     coverage: {
       provider: 'v8',
-      include: ['src/domain/**/*.ts'],
+      include: ['src/domain/**/*.ts', 'src/server/**/*.ts'],
       thresholds: {
-        lines: 90,
-        functions: 90,
-        branches: 70,
-        statements: 90,
+        lines: 88,
+        functions: 87,
+        branches: 73,
+        statements: 85,
       },
     },
   },

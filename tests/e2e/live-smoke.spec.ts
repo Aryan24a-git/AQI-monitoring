@@ -8,7 +8,6 @@ declare global {
 }
 
 test('full prototype click-through against live production server', async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== 'desktop', 'Desktop Chromium only');
   test.setTimeout(60_000);
 
   const consoleErrors: string[] = [];
@@ -79,9 +78,11 @@ test('full prototype click-through against live production server', async ({ pag
   expect(afterBulletin).toContain('आज का वायु स्वास्थ्य अलर्ट');
   await page.screenshot({ path: 'evidence/screens/community.png' });
 
-  // 6. Profile drawer opens, editing updates header profile pill
+  // 6. Profile drawer opens, editing updates header profile pill (desktop only)
   const headerProfileBtn = page.locator('button[title="Click to customize household profile"]');
-  await expect(headerProfileBtn).toContainText('No Purifier');
+  if (testInfo.project.name === 'desktop') {
+    await expect(headerProfileBtn).toContainText('No Purifier');
+  }
   await page.getByRole('button', { name: 'Profile', exact: true }).click();
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
@@ -89,7 +90,9 @@ test('full prototype click-through against live production server', async ({ pag
   await dialog.getByRole('button', { name: '1 Room HEPA' }).click();
   await dialog.getByRole('button', { name: 'Save & Apply' }).click();
   await expect(dialog).not.toBeVisible();
-  await expect(headerProfileBtn).toContainText('1 Room HEPA');
+  if (testInfo.project.name === 'desktop') {
+    await expect(headerProfileBtn).toContainText('1 Room HEPA');
+  }
 
   // 7. Clear my data returns to empty state
   await page.getByRole('button', { name: 'Profile', exact: true }).click();
